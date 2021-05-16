@@ -119,7 +119,7 @@ class InputManager:
                     self.pressing_right = False
             elif event.type == JOYBUTTONDOWN:
                 self.pressed_any = True
-                if event.button == 3:
+                if event.button == JKEY_X:
                     self.pressed_hard_drop = True
                 elif event.button == 2:
                     self.pressed_rotate_left = True

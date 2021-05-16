@@ -53,6 +53,13 @@ while True:
 
     pygame.event.pump()
     for event in pygame.event.get():
+        if event.type == pygame.JOYAXISMOTION:
+            axis = event.axis
+            val = round(event.value)
+            if (axis == 0 and val == -1):
+                pixels.fill((128, 0, 0))
+            if (axis == 0 and val == 1):
+                pixels.fill((0, 128, 0))
         if event.type == pygame.JOYBUTTONDOWN:
             myevent = event.button
             if myevent == JKEY_A:
