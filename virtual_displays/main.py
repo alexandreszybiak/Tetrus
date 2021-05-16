@@ -151,10 +151,15 @@ class InputManager:
             if event.type == pygame.JOYAXISMOTION:
                 axis = event.axis
                 val = round(event.value)
+                if axis == 0 and val == 0:
+                    self.pressing_left = False
+                    self.pressing_right = False
                 if axis == 0 and val == -1:
-                    pixels.fill((128, 0, 0))
+                    self.pressing_left = True
+                    self.pressed_left = True
                 if axis == 0 and val == 1:
-                    pixels.fill((0, 128, 0))
+                    self.pressing_right = True
+                    self.pressed_right = True
 
 
 def fill_screen(color):
@@ -211,25 +216,30 @@ input_manager = InputManager()
 
 fill_screen((0, 0, 32))
 
+character_position = 5
+
 while True:
     # Pre-update
     input_manager.update()
+    fill_screen((0, 0, 0))
 
     # Update
     if input_manager.joystick is not None:
         fill_screen((0,0,128))
     else:
         fill_screen((0,0,32))
-    if input_manager.pressing_left:
-        fill_screen((128,0,0))
-    if input_manager.pressing_right:
-        fill_screen((0,128,0))
+
+    if input_manager.pressed_left and character_position > 0:
+        character_position -= 1
+    if input_manager.pressed_right and character_position < 9:
+        character_position += 1
 
     # Draw
-    for y in range(0, BOARD_HEIGHT):
-        for x in range(0, BOARD_WIDTH):
-            draw_pixel(x, y, (random.randint(128,255), random.randint(128,255), random.randint(128,255)))
+    #for y in range(0, BOARD_HEIGHT):
+        #for x in range(0, BOARD_WIDTH):
+            #draw_pixel(x, y, (random.randint(128,255), random.randint(128,255), random.randint(128,255)))
 
+    draw_pixel(character_position, 10, (255, 255, 255))
 
     # Post-draw
     update_screen()
