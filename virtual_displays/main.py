@@ -86,7 +86,7 @@ class InputManager:
         for event in pygame.event.get():
             if event.type == QUIT:
                 terminate()
-            elif event.type == KEYDOWN:
+            if event.type == KEYDOWN:
                 self.pressed_any = True
                 if event.key == K_LEFT:
                     self.pressing_left = True
@@ -109,7 +109,7 @@ class InputManager:
                     self.pressed_palette_right = True
                 elif event.key == K_ESCAPE:
                     terminate()
-            elif event.type == KEYUP:
+            if event.type == KEYUP:
                 if event.key == K_DOWN:
                     self.pressing_down = False
                     self.released_down = True
@@ -117,7 +117,7 @@ class InputManager:
                     self.pressing_left = False
                 elif event.key == K_RIGHT:
                     self.pressing_right = False
-            elif event.type == JOYBUTTONDOWN:
+            if event.type == JOYBUTTONDOWN:
                 self.pressed_any = True
                 if event.button == JKEY_X:
                     self.pressed_hard_drop = True
@@ -129,7 +129,7 @@ class InputManager:
                     self.pressed_palette_left = True
                 elif event.button == 4:
                     self.pressed_palette_right = True
-            elif event.type == JOYHATMOTION:
+            if event.type == JOYHATMOTION:
                 if event.value[0] == -1:
                     self.pressing_left = True
                     self.pressed_left = True
@@ -148,6 +148,13 @@ class InputManager:
                     if self.pressing_down:
                         self.released_down = True
                     self.pressing_down = False
+            if event.type == pygame.JOYAXISMOTION:
+                axis = event.axis
+                val = round(event.value)
+                if axis == 0 and val == -1:
+                    pixels.fill((128, 0, 0))
+                if axis == 0 and val == 1:
+                    pixels.fill((0, 128, 0))
 
 
 def fill_screen(color):

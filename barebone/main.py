@@ -37,6 +37,7 @@ pixels.fill((32, 0, 0))
 
 while True:
     pixels[0] = (0, 0, 0)
+    pixels.fill((0, 0, 0))
 
     if not joystick_detected:
         pygame.joystick.quit()
