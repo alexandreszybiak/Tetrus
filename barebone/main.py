@@ -36,6 +36,8 @@ pygame.joystick.init()
 pixels.fill((32, 0, 0))
 
 while True:
+    pixels[0] == (0, 0, 0)
+
     if not joystick_detected:
         pygame.joystick.quit()
         pygame.joystick.init()
@@ -55,8 +57,10 @@ while True:
             myevent = event.button
             if myevent == JKEY_A:
                 pixels.fill((128, 0, 0))
-            if myevent == JKEY_B:
+            elif myevent == JKEY_B:
                 pixels.fill((0, 128, 0))
+            elif myevent == JKEY_X:
+                pixels[0] == (255, 255, 0)
 
     pixels.show()
     time.sleep(0.03)

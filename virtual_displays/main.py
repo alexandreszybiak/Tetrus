@@ -1,5 +1,9 @@
 PI = False
 
+# Game Constants
+BOARD_WIDTH = 10
+BOARD_HEIGHT = 20
+
 # Gamepad Constants
 JKEY_X = 3
 JKEY_Y = 4
@@ -10,13 +14,13 @@ JKEY_L = 6
 JKEY_SEL = 10
 JKEY_START = 11
 
-# Display simulation constants
+# Display simulation Constants
 WINDOW_WIDTH = 480
 WINDOW_HEIGHT = 640
 NEOPIXEL_SIZE = 20
 NEOPIXEL_SPACING = 4
-NEOPIXEL_WIDTH = 10 * (NEOPIXEL_SIZE + NEOPIXEL_SPACING)
-NEOPIXEL_HEIGHT = 20 * (NEOPIXEL_SIZE + NEOPIXEL_SPACING)
+NEOPIXEL_WIDTH = BOARD_WIDTH * (NEOPIXEL_SIZE + NEOPIXEL_SPACING)
+NEOPIXEL_HEIGHT = BOARD_HEIGHT * (NEOPIXEL_SIZE + NEOPIXEL_SPACING)
 
 import random, time, sys, os, pickle
 import pygame
@@ -103,6 +107,8 @@ class InputManager:
                     self.pressed_palette_left = True
                 elif event.key == K_v:
                     self.pressed_palette_right = True
+                elif event.key == K_ESCAPE:
+                    terminate()
             elif event.type == KEYUP:
                 if event.key == K_DOWN:
                     self.pressing_down = False
@@ -152,9 +158,19 @@ def fill_screen(color):
 
 
 def draw_pixel(x, y, color):
-    rect_x = WINDOW_WIDTH / 2 - NEOPIXEL_WIDTH / 2 + x * (NEOPIXEL_SIZE + NEOPIXEL_SPACING)
-    rect_y = WINDOW_HEIGHT / 2 - NEOPIXEL_HEIGHT / 2 + y * (NEOPIXEL_SIZE + NEOPIXEL_SPACING)
-    pygame.draw.rect(application_surface, color, (rect_x, rect_y, NEOPIXEL_SIZE, NEOPIXEL_SIZE))
+    if PI:
+        try:
+            if x >= 0 and y >= 0 and color >= 0:
+                if x % 2 == 1:
+                    pixels[x * BOARD_HEIGHT + y] = color
+                else:
+                    pixels[x * BOARD_HEIGHT + (BOARD_HEIGHT - 1 - y)] = color
+        except:
+            print(str(x) + ' --- ' + str(y))
+    else:
+        rect_x = WINDOW_WIDTH / 2 - NEOPIXEL_WIDTH / 2 + x * (NEOPIXEL_SIZE + NEOPIXEL_SPACING)
+        rect_y = WINDOW_HEIGHT / 2 - NEOPIXEL_HEIGHT / 2 + y * (NEOPIXEL_SIZE + NEOPIXEL_SPACING)
+        pygame.draw.rect(application_surface, color, (rect_x, rect_y, NEOPIXEL_SIZE, NEOPIXEL_SIZE))
 
 
 def update_screen():
@@ -174,11 +190,11 @@ if PI:
     serial = spi(port=0, device=0, gpio=noop())
     device = max7219(serial, cascaded=4, blocks_arranged_in_reverse_order=True, block_orientation=90)
     pixel_pin = board.D21
-    num_pixels = 10 * 20
+    num_pixels = BOARD_WIDTH * BOARD_HEIGHT
     pixels = neopixel.NeoPixel(pixel_pin, num_pixels, brightness=0.30, auto_write=False, pixel_order=neopixel.GRB)
 else:
     pygame.display.set_caption("Tetrus Desktop")
-    application_surface = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
+    application_surface = pygame.display.set_mode((0, 0))
 
 joystick_detected = False
 pygame.init()
@@ -203,8 +219,8 @@ while True:
         fill_screen((0,128,0))
 
     # Draw
-    for y in range(0, 20):
-        for x in range(0, 10):
+    for y in range(0, BOARD_HEIGHT):
+        for x in range(0, BOARD_WIDTH):
             draw_pixel(x, y, (random.randint(128,255), random.randint(128,255), random.randint(128,255)))
 
 
