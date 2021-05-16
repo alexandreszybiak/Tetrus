@@ -1,5 +1,23 @@
 PI = False
 
+# Gamepad Constants
+JKEY_X = 3
+JKEY_Y = 4
+JKEY_A = 0
+JKEY_B = 1
+JKEY_R = 7
+JKEY_L = 6
+JKEY_SEL = 10
+JKEY_START = 11
+
+# Display simulation constants
+WINDOW_WIDTH = 480
+WINDOW_HEIGHT = 640
+NEOPIXEL_SIZE = 20
+NEOPIXEL_SPACING = 4
+NEOPIXEL_WIDTH = 10 * (NEOPIXEL_SIZE + NEOPIXEL_SPACING)
+NEOPIXEL_HEIGHT = 20 * (NEOPIXEL_SIZE + NEOPIXEL_SPACING)
+
 import random, time, sys, os, pickle
 import pygame
 from pygame.locals import *
@@ -14,16 +32,6 @@ if PI:
     from luma.core.virtual import viewport
     from luma.core.legacy import text, show_message
     from luma.core.legacy.font import proportional, CP437_FONT, TINY_FONT, SINCLAIR_FONT, LCD_FONT
-
-# Constants
-JKEY_X = 3
-JKEY_Y = 4
-JKEY_A = 0
-JKEY_B = 1
-JKEY_R = 7
-JKEY_L = 6
-JKEY_SEL = 10
-JKEY_START = 11
 
 
 class InputManager:
@@ -143,6 +151,12 @@ def fill_screen(color):
         application_surface.fill(color)
 
 
+def draw_pixel(x, y, color):
+    rect_x = WINDOW_WIDTH / 2 - NEOPIXEL_WIDTH / 2 + x * (NEOPIXEL_SIZE + NEOPIXEL_SPACING)
+    rect_y = WINDOW_HEIGHT / 2 - NEOPIXEL_HEIGHT / 2 + y * (NEOPIXEL_SIZE + NEOPIXEL_SPACING)
+    pygame.draw.rect(application_surface, color, (rect_x, rect_y, NEOPIXEL_SIZE, NEOPIXEL_SIZE))
+
+
 def update_screen():
     if PI:
         pixels.show()
@@ -164,7 +178,7 @@ if PI:
     pixels = neopixel.NeoPixel(pixel_pin, num_pixels, brightness=0.30, auto_write=False, pixel_order=neopixel.GRB)
 else:
     pygame.display.set_caption("Tetrus Desktop")
-    application_surface = pygame.display.set_mode((480,640))
+    application_surface = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
 
 joystick_detected = False
 pygame.init()
@@ -187,6 +201,12 @@ while True:
         fill_screen((128,0,0))
     if input_manager.pressing_right:
         fill_screen((0,128,0))
+
+    # Draw
+    for y in range(0, 20):
+        for x in range(0, 10):
+            draw_pixel(x, y, (random.randint(128,255), random.randint(128,255), random.randint(128,255)))
+
 
     # Post-draw
     update_screen()
