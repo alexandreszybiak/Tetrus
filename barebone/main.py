@@ -22,6 +22,18 @@ JKEY_L = 6
 JKEY_SEL = 10
 JKEY_START = 11
 
+
+def draw_pixel(x, y, color):
+    try:
+        if x >= 0 and y >= 0 and color >= 0:
+            if x % 2 == 1:
+                pixels[x * BOARD_HEIGHT + y] = color
+            else:
+                pixels[x * BOARD_HEIGHT + (BOARD_HEIGHT - 1 - y)] = color
+    except:
+        print(str(x) + ' --- ' + str(y))
+
+
 serial = spi(port=0, device=0, gpio=noop())
 device = max7219(serial, cascaded=4, blocks_arranged_in_reverse_order=True, block_orientation=90)
 pixel_pin = board.D21
@@ -57,9 +69,9 @@ while True:
         if event.type == pygame.JOYAXISMOTION:
             axis = event.axis
             val = round(event.value)
-            if (axis == 0 and val == -1):
+            if axis == 0 and val == -1:
                 pixels.fill((128, 0, 0))
-            if (axis == 0 and val == 1):
+            if axis == 0 and val == 1:
                 pixels.fill((0, 128, 0))
         if event.type == pygame.JOYBUTTONDOWN:
             myevent = event.button
@@ -68,7 +80,7 @@ while True:
             elif myevent == JKEY_B:
                 pixels.fill((0, 128, 0))
             elif myevent == JKEY_X:
-                pixels[0] = (255, 255, 0)
+                draw_pixel(5, 10, (0, 255, 255))
 
     pixels.show()
     time.sleep(0.03)
