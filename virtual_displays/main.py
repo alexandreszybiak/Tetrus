@@ -199,6 +199,7 @@ def update_screen():
 
 
 def terminate():
+    fill_screen((0, 0, 0))
     pygame.quit()
     exit()
 
