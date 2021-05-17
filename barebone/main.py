@@ -27,9 +27,9 @@ def draw_pixel(x, y, color):
     try:
         if x >= 0 and y >= 0:
             if x % 2 == 1:
-                pixels[x * BOARD_HEIGHT + y] = color
+                pixels[x * 20 + y] = color
             else:
-                pixels[x * BOARD_HEIGHT + (BOARD_HEIGHT - 1 - y)] = color
+                pixels[x * 20 + (20 - 1 - y)] = color
     except:
         print(str(x) + ' --- ' + str(y))
 
@@ -50,6 +50,7 @@ pixels.fill((32, 0, 0))
 while True:
     pixels[0] = (0, 0, 0)
     pixels.fill((0, 0, 0))
+    draw_pixel(5, 10, (0, 255, 255))
 
     if not joystick_detected:
         pygame.joystick.quit()
@@ -82,6 +83,8 @@ while True:
             elif myevent == JKEY_X:
                 draw_pixel(5, 10, (0, 255, 255))
 
+    draw_pixel(5, 10, (0, 255, 255))
+    
     pixels.show()
     time.sleep(0.03)
 
