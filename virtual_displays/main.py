@@ -1,4 +1,4 @@
-PI = False
+PI = True
 
 # Game Constants
 BOARD_WIDTH = 10
@@ -202,13 +202,12 @@ def terminate():
     pygame.quit()
     exit()
 
-
 # Init
 
 if PI:
     serial = spi(port=0, device=0, gpio=noop())
     device = max7219(serial, cascaded=4, blocks_arranged_in_reverse_order=True, block_orientation=90)
-    device.contrat(20)
+    device.contrast(20)
     pixel_pin = board.D21
     num_pixels = BOARD_WIDTH * BOARD_HEIGHT
     pixels = neopixel.NeoPixel(pixel_pin, num_pixels, brightness=0.30, auto_write=False, pixel_order=neopixel.GRB)
@@ -248,6 +247,8 @@ while True:
         character_position -= 1
     if input_manager.pressed_right and character_position < 9:
         character_position += 1
+    if input_manager.pressed_hard_drop:
+        terminate()
 
     # Draw
     # for y in range(0, BOARD_HEIGHT):
