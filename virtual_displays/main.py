@@ -166,7 +166,9 @@ def fill_screen(color):
     if PI:
         pixels.fill(color)
     else:
-        application_surface.fill(color)
+        for y in range(0, BOARD_HEIGHT):
+            for x in range(0, BOARD_WIDTH):
+                draw_pixel(x, y, color)
 
 
 def draw_pixel(x, y, color):
@@ -190,6 +192,7 @@ def update_screen():
         pixels.show()
     else:
         pygame.display.update()
+
 
 def terminate():
     pygame.quit()
@@ -220,14 +223,16 @@ character_position = 5
 
 while True:
     # Pre-update
+    if not PI:
+        application_surface.fill((0, 0, 32))
     input_manager.update()
-    fill_screen((0, 0, 0))
+    fill_screen((0, 0, 16))
 
     # Update
     if input_manager.joystick is not None:
-        fill_screen((0,0,128))
+        fill_screen((0, 0, 32))
     else:
-        fill_screen((0,0,32))
+        fill_screen((0, 0, 64))
 
     if input_manager.pressed_left and character_position > 0:
         character_position -= 1
@@ -235,9 +240,9 @@ while True:
         character_position += 1
 
     # Draw
-    #for y in range(0, BOARD_HEIGHT):
-        #for x in range(0, BOARD_WIDTH):
-            #draw_pixel(x, y, (random.randint(128,255), random.randint(128,255), random.randint(128,255)))
+    # for y in range(0, BOARD_HEIGHT):
+    # for x in range(0, BOARD_WIDTH):
+    # draw_pixel(x, y, (random.randint(128,255), random.randint(128,255), random.randint(128,255)))
 
     draw_pixel(character_position, 10, (255, 255, 255))
 
