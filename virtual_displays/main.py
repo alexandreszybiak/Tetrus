@@ -208,6 +208,7 @@ def terminate():
 if PI:
     serial = spi(port=0, device=0, gpio=noop())
     device = max7219(serial, cascaded=4, blocks_arranged_in_reverse_order=True, block_orientation=90)
+    device.contrat(20)
     pixel_pin = board.D21
     num_pixels = BOARD_WIDTH * BOARD_HEIGHT
     pixels = neopixel.NeoPixel(pixel_pin, num_pixels, brightness=0.30, auto_write=False, pixel_order=neopixel.GRB)
@@ -227,7 +228,7 @@ character_position = 5
 
 if PI:
     with canvas(device) as draw1:
-        draw_pixel_led(2, 7, 1, draw1)
+        draw_pixel_led(2, 7, draw1)
     device.show()
 
 while True:
