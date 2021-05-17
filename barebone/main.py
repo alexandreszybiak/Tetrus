@@ -25,7 +25,7 @@ JKEY_START = 11
 
 def draw_pixel(x, y, color):
     try:
-        if x >= 0 and y >= 0 and color >= 0:
+        if x >= 0 and y >= 0:
             if x % 2 == 1:
                 pixels[x * BOARD_HEIGHT + y] = color
             else:

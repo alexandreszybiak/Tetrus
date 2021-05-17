@@ -174,7 +174,7 @@ def fill_screen(color):
 def draw_pixel(x, y, color):
     if PI:
         try:
-            if x >= 0 and y >= 0 and color >= 0:
+            if x >= 0 and y >= 0:
                 if x % 2 == 1:
                     pixels[x * BOARD_HEIGHT + y] = color
                 else:
