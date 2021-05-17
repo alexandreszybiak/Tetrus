@@ -200,6 +200,7 @@ def update_screen():
 
 def terminate():
     fill_screen((0, 0, 0))
+    update_screen()
     pygame.quit()
     exit()
 
@@ -229,6 +230,7 @@ character_position = 5
 if PI:
     with canvas(device) as draw1:
         draw_pixel_led(2, 7, draw1)
+        draw_pixel_led(3, 7, draw1)
     device.show()
 
 while True:
