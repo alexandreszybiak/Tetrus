@@ -187,6 +187,10 @@ def draw_pixel(x, y, color):
         pygame.draw.rect(application_surface, color, (rect_x, rect_y, NEOPIXEL_SIZE, NEOPIXEL_SIZE))
 
 
+def draw_pixel_led(x, y, draw):
+    draw.point((31 - x, y), fill="white")
+
+
 def update_screen():
     if PI:
         pixels.show()
@@ -196,7 +200,7 @@ def update_screen():
 
 def terminate():
     pygame.quit()
-    sys.exit()
+    exit()
 
 
 # Init
@@ -220,6 +224,11 @@ input_manager = InputManager()
 fill_screen((0, 0, 32))
 
 character_position = 5
+
+if PI:
+    with canvas(device) as draw1:
+        draw_pixel_led(2, 7, 1, draw1)
+    device.show()
 
 while True:
     # Pre-update

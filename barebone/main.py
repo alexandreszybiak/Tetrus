@@ -84,7 +84,7 @@ while True:
                 draw_pixel(5, 10, (0, 255, 255))
 
     draw_pixel(5, 10, (0, 255, 255))
-    
+
     pixels.show()
     time.sleep(0.03)
 
