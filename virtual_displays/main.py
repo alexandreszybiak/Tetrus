@@ -15,12 +15,20 @@ JKEY_SEL = 10
 JKEY_START = 11
 
 # Display simulation Constants
-WINDOW_WIDTH = 480
-WINDOW_HEIGHT = 640
-NEOPIXEL_SIZE = 20
+NEOPIXEL_SIZE = 26
 NEOPIXEL_SPACING = 4
 NEOPIXEL_WIDTH = BOARD_WIDTH * (NEOPIXEL_SIZE + NEOPIXEL_SPACING)
 NEOPIXEL_HEIGHT = BOARD_HEIGHT * (NEOPIXEL_SIZE + NEOPIXEL_SPACING)
+LUMA_SIZE = 3
+LUMA_SPACING = 1
+LUMA_COLOR_ON = (255, 0, 0)
+LUMA_COLOR_OFF = (0, 0, 0)
+LUMA_WIDTH = 32 * (LUMA_SIZE + LUMA_SPACING)
+LUMA_HEIGHT = 8 * (LUMA_SIZE + LUMA_SPACING)
+BOTH_DEVICE_HEIGHT = NEOPIXEL_HEIGHT + LUMA_HEIGHT
+
+# Color Constants
+BLACK = (0, 0, 16)
 
 import random, time, sys, os, pickle
 import pygame
@@ -162,16 +170,16 @@ class InputManager:
                     self.pressed_right = True
 
 
-def fill_screen(color):
+def neopixel_fill(color):
     if PI:
         pixels.fill(color)
     else:
-        for y in range(0, BOARD_HEIGHT):
-            for x in range(0, BOARD_WIDTH):
-                draw_pixel(x, y, color)
+        for y in range(BOARD_HEIGHT):
+            for x in range(BOARD_WIDTH):
+                neopixel_draw(x, y, color)
 
 
-def draw_pixel(x, y, color):
+def neopixel_draw(x, y, color):
     if PI:
         try:
             if x >= 0 and y >= 0:
@@ -182,13 +190,31 @@ def draw_pixel(x, y, color):
         except:
             print(str(x) + ' --- ' + str(y))
     else:
-        rect_x = WINDOW_WIDTH / 2 - NEOPIXEL_WIDTH / 2 + x * (NEOPIXEL_SIZE + NEOPIXEL_SPACING)
-        rect_y = WINDOW_HEIGHT / 2 - NEOPIXEL_HEIGHT / 2 + y * (NEOPIXEL_SIZE + NEOPIXEL_SPACING)
+        pygame.display.get_window_size()
+        rect_x = pygame.display.get_window_size()[0] / 2 - NEOPIXEL_WIDTH / 2 + x * (NEOPIXEL_SIZE + NEOPIXEL_SPACING)
+        rect_y = pygame.display.get_window_size()[1] / 2 - NEOPIXEL_HEIGHT / 2 + y * (NEOPIXEL_SIZE + NEOPIXEL_SPACING)
         pygame.draw.rect(application_surface, color, (rect_x, rect_y, NEOPIXEL_SIZE, NEOPIXEL_SIZE))
 
 
-def draw_pixel_led(x, y, draw):
-    draw.point((31 - x, y), fill="white")
+def luma_fill(color):
+    if PI:
+        pass
+    else:
+        for y in range(8):
+            for x in range(32):
+                luma_draw(x, y, color)
+
+
+def luma_draw(x, y, color):
+    if PI:
+        with canvas(device) as draw:
+            draw.point((x, y), fill="white")
+        device.show()
+    else:
+        pygame.display.get_window_size()
+        rect_x = pygame.display.get_window_size()[0] / 2 - LUMA_WIDTH / 2 + x * (LUMA_SIZE + LUMA_SPACING)
+        rect_y = pygame.display.get_window_size()[1] / 2 + NEOPIXEL_HEIGHT / 2 + y * (LUMA_SIZE + LUMA_SPACING)
+        pygame.draw.rect(application_surface, color, (rect_x, rect_y, LUMA_SIZE, LUMA_SIZE))
 
 
 def update_screen():
@@ -199,10 +225,11 @@ def update_screen():
 
 
 def terminate():
-    fill_screen((0, 0, 0))
+    neopixel_fill((0, 0, 0))
     update_screen()
     pygame.quit()
     exit()
+
 
 # Init
 
@@ -223,28 +250,29 @@ pygame.joystick.init()
 
 input_manager = InputManager()
 
-fill_screen((0, 0, 32))
+neopixel_fill((0, 0, 32))
 
 character_position = 5
 
 if PI:
-    with canvas(device) as draw1:
-        draw_pixel_led(2, 7, draw1)
-        draw_pixel_led(3, 7, draw1)
-    device.show()
+    with canvas(device) as draw:
+        for i in range(0, 3):
+            text(draw, ((3 - i) * 8, 0), "B00BA", fill="white")
+        device.show()
 
 while True:
     # Pre-update
     if not PI:
-        application_surface.fill((0, 0, 32))
+        application_surface.fill((54, 87, 219))
+        luma_fill(LUMA_COLOR_OFF)
     input_manager.update()
-    fill_screen((0, 0, 16))
+    neopixel_fill((0, 0, 16))
 
     # Update
     if input_manager.joystick is not None:
-        fill_screen((0, 0, 32))
+        neopixel_fill((0, 0, 32))
     else:
-        fill_screen((0, 0, 64))
+        neopixel_fill((0, 0, 64))
 
     if input_manager.pressed_left and character_position > 0:
         character_position -= 1
@@ -258,7 +286,7 @@ while True:
     # for x in range(0, BOARD_WIDTH):
     # draw_pixel(x, y, (random.randint(128,255), random.randint(128,255), random.randint(128,255)))
 
-    draw_pixel(character_position, 10, (255, 255, 255))
+    neopixel_draw(character_position, 10, (255, 255, 255))
 
     # Post-draw
     update_screen()
