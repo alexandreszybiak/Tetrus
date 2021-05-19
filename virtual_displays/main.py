@@ -256,8 +256,7 @@ character_position = 5
 
 if PI:
     with canvas(device) as draw:
-        for i in range(0, 3):
-            text(draw, ((3 - i) * 8, 0), "B00BA", fill="white")
+        text(draw, (0, 0), "B00BA", fill="white")
         device.show()
 
 while True:
