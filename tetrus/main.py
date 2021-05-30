@@ -1,16 +1,33 @@
-# Tetrus (a Tetris clone)
-# By Alexandre Szybiak @aszybiak
-# https://alexandreszybiak.itch.io/
-# Creative Commons BY-NC-SA 3.0 US
+PI = True
 
-import pygame
-import random
-import sys
-import time
-from enum import Enum
+# Game Constants
+BOARD_WIDTH = 10
+BOARD_HEIGHT = 20
 
-from pygame.locals import *
+# Gamepad Constants
+JKEY_X = 3
+JKEY_Y = 4
+JKEY_A = 0
+JKEY_B = 1
+JKEY_R = 7
+JKEY_L = 6
+JKEY_SEL = 10
+JKEY_START = 11
 
+# Display simulation Constants
+NEOPIXEL_SIZE = 26
+NEOPIXEL_SPACING = 4
+NEOPIXEL_WIDTH = BOARD_WIDTH * (NEOPIXEL_SIZE + NEOPIXEL_SPACING)
+NEOPIXEL_HEIGHT = BOARD_HEIGHT * (NEOPIXEL_SIZE + NEOPIXEL_SPACING)
+LUMA_SIZE = 3
+LUMA_SPACING = 1
+LUMA_COLOR_ON = (255, 0, 0)
+LUMA_COLOR_OFF = (0, 0, 0)
+LUMA_WIDTH = 32 * (LUMA_SIZE + LUMA_SPACING)
+LUMA_HEIGHT = 8 * (LUMA_SIZE + LUMA_SPACING)
+BOTH_DEVICE_HEIGHT = NEOPIXEL_HEIGHT + LUMA_HEIGHT
+
+# Color Palettes
 colors_default = [0x000000,  # background
                   0xffc96b,  # s
                   0xffc16b,  # z
@@ -64,6 +81,28 @@ color_indexes = {"background": 0,
                  }
 
 color_palettes = [colors_blue, colors_default, colors_bubble]
+
+# Color Constants
+BLACK = (0, 0, 16)
+
+# Constant for empty cell
+blank = '.'
+
+import random, time, sys, os, pickle
+from enum import Enum
+import pygame
+from pygame.locals import *
+
+if PI:
+    import board
+    import neopixel
+    import subprocess
+    from luma.led_matrix.device import max7219
+    from luma.core.interface.serial import spi, noop
+    from luma.core.render import canvas
+    from luma.core.virtual import viewport
+    from luma.core.legacy import text, show_message
+    from luma.core.legacy.font import proportional, CP437_FONT, TINY_FONT, SINCLAIR_FONT, LCD_FONT
 
 
 class ShapeTemplates(Enum):
@@ -187,59 +226,6 @@ class StateMachine:
         self.state = new_state
 
 
-class Display:
-    def __init__(self, x, y, width, height, pixel_size):
-        self.x = x
-        self.y = y
-        self.pixels = []
-        self.width = width
-        self.height = height
-        self.pixel_size = pixel_size
-        for i in range(self.width):
-            self.pixels.append([0] * self.height)
-
-    def set_pixel_size(self, value):
-        self.pixel_size = value
-
-    def clear(self):
-        for x in range(self.width):
-            for y in range(self.height):
-                self.set_cell(x, y, blank)
-
-    def set_cell(self, x, y, value):
-        self.pixels[x][y] = value
-
-    def draw(self):
-        for x in range(self.width):
-            for y in range(self.height):
-                if self.pixels[x][y] != blank:
-                    self.draw_pixel(x, y, self.pixels[x][y])
-
-    def draw_pixel(self, x, y, color_index):
-        pygame.draw.rect(application_surface, (255, 255, 255),
-                         (x * self.pixel_size, y * self.pixel_size, self.pixel_size, self.pixel_size))
-
-
-class MatrixDisplay(Display):
-    pass
-
-
-class LedDisplay(Display):
-    def __init__(self, x, y, width, height, pixel_size):
-        super().__init__(x, y, width, height, pixel_size)
-        self.palette = 0
-
-    def update(self):
-        if input_manager.pressed_palette_right:
-            self.palette = (self.palette + 1) % len(color_palettes)
-        elif input_manager.pressed_palette_left:
-            self.palette = (self.palette - 1) % len(color_palettes)
-
-    def draw_pixel(self, x, y, color_index):
-        pygame.draw.rect(application_surface, color_palettes[self.palette][color_index],
-                         (x * self.pixel_size, y * self.pixel_size, self.pixel_size, self.pixel_size))
-
-
 class InputManager:
     def __init__(self):
         self.pressing_left = False
@@ -252,6 +238,7 @@ class InputManager:
         self.pressed_rotate_right = False
         self.pressed_hard_drop = False
         self.pressed_reset_board = False
+        self.pressed_quit = False
         self.pressed_any = False
         self.released_down = False
         self.pressed_palette_left = False
@@ -282,13 +269,14 @@ class InputManager:
         self.pressed_reset_board = False
         self.pressed_palette_left = False
         self.pressed_palette_right = False
+        self.pressed_quit = False
         self.pressed_any = False
         self.released_down = False
         pygame.event.pump()
         for event in pygame.event.get():
             if event.type == QUIT:
                 terminate()
-            elif event.type == KEYDOWN:
+            if event.type == KEYDOWN:
                 self.pressed_any = True
                 if event.key == K_LEFT:
                     self.pressing_left = True
@@ -309,7 +297,9 @@ class InputManager:
                     self.pressed_palette_left = True
                 elif event.key == K_v:
                     self.pressed_palette_right = True
-            elif event.type == KEYUP:
+                elif event.key == K_ESCAPE:
+                    self.pressed_quit = True
+            if event.type == KEYUP:
                 if event.key == K_DOWN:
                     self.pressing_down = False
                     self.released_down = True
@@ -317,10 +307,12 @@ class InputManager:
                     self.pressing_left = False
                 elif event.key == K_RIGHT:
                     self.pressing_right = False
-            elif event.type == JOYBUTTONDOWN:
+            if event.type == JOYBUTTONDOWN:
                 self.pressed_any = True
-                if event.button == 3:
+                if event.button == JKEY_X:
                     self.pressed_hard_drop = True
+                elif event.button == JKEY_R:
+                    self.pressed_quit = True
                 elif event.button == 2:
                     self.pressed_rotate_left = True
                 elif event.button == 0:
@@ -329,7 +321,7 @@ class InputManager:
                     self.pressed_palette_left = True
                 elif event.button == 4:
                     self.pressed_palette_right = True
-            elif event.type == JOYHATMOTION:
+            if event.type == JOYHATMOTION:
                 if event.value[0] == -1:
                     self.pressing_left = True
                     self.pressed_left = True
@@ -348,6 +340,18 @@ class InputManager:
                     if self.pressing_down:
                         self.released_down = True
                     self.pressing_down = False
+            if event.type == pygame.JOYAXISMOTION:
+                axis = event.axis
+                val = round(event.value)
+                if axis == 0 and val == 0:
+                    self.pressing_left = False
+                    self.pressing_right = False
+                if axis == 0 and val == -1:
+                    self.pressing_left = True
+                    self.pressed_left = True
+                if axis == 0 and val == 1:
+                    self.pressing_right = True
+                    self.pressed_right = True
 
 
 class Piece:
@@ -472,7 +476,7 @@ class Piece:
                     continue
                 if y + self.y + add_y < 0:
                     continue
-                led_display.set_cell(x + self.x + add_x, y + self.y + add_y, color)
+                neopixel_draw(x + self.x + add_x, y + self.y + add_y, color_palettes[0][color])
 
     def hard_drop(self):
         if not self.is_valid_position(add_y=1):
@@ -635,7 +639,7 @@ class Board:
         for x in range(self.width):
             for y in range(self.height):
                 if self.content[x][y] != blank:
-                    led_display.set_cell(x, y, self.content[x][y])
+                    neopixel_draw(x, y, color_palettes[0][self.content[x][y]])
         self.falling_piece.update_pixels(color_indexes["piece_shadow"], add_y=self.falling_piece.get_drop_position())
         self.falling_piece.update_pixels(self.falling_piece.color_index)
 
@@ -644,47 +648,66 @@ def is_on_board(x, y):
     return 0 <= x < board.width and y < board.height
 
 
-def terminate():
-    pygame.quit()
-    sys.exit()
+def neopixel_fill(color):
+    if PI:
+        pixels.fill(color)
+    else:
+        for y in range(BOARD_HEIGHT):
+            for x in range(BOARD_WIDTH):
+                neopixel_draw(x, y, color)
 
 
-def run():
-    while True:
-        # pre update
-        input_manager.update()
+def neopixel_draw(x, y, color):
+    if PI:
+        try:
+            if x >= 0 and y >= 0:
+                if x % 2 == 1:
+                    pixels[x * BOARD_HEIGHT + y] = color
+                else:
+                    pixels[x * BOARD_HEIGHT + (BOARD_HEIGHT - 1 - y)] = color
+        except:
+            print(str(x) + ' --- ' + str(y))
+    else:
+        pygame.display.get_window_size()
+        rect_x = pygame.display.get_window_size()[0] / 2 - NEOPIXEL_WIDTH / 2 + x * (NEOPIXEL_SIZE + NEOPIXEL_SPACING)
+        rect_y = pygame.display.get_window_size()[1] / 2 - NEOPIXEL_HEIGHT / 2 + y * (NEOPIXEL_SIZE + NEOPIXEL_SPACING)
+        pygame.draw.rect(application_surface, color, (rect_x, rect_y, NEOPIXEL_SIZE, NEOPIXEL_SIZE))
 
-        # update
-        if board.state == state_fall:
-            board.falling_piece.update()
-        elif board.state == state_clear:
-            board.line_cleaner.update()
-        elif board.state == state_fill:
-            board.board_filler.update()
-        elif board.state == state_wait:
-            if input_manager.pressed_any:
-                board.falling_piece.__init__()
-                board.begin_fall_state()
 
-        led_display.update()
+def luma_fill(color):
+    if PI:
+        pass
+    else:
+        for y in range(8):
+            for x in range(32):
+                luma_draw(x, y, color)
 
-        # pre-draw
-        led_display.clear()
-        matrix_display.clear()
-        application_surface.fill((0, 0, 0))
 
-        # draw
-        board.update_pixels()
-        led_display.draw()
-        matrix_display.draw()
+def luma_draw(x, y, color):
+    if PI:
+        with canvas(device) as draw:
+            draw.point((x, y), fill="white")
+        device.show()
+    else:
+        pygame.display.get_window_size()
+        rect_x = pygame.display.get_window_size()[0] / 2 - LUMA_WIDTH / 2 + x * (LUMA_SIZE + LUMA_SPACING)
+        rect_y = pygame.display.get_window_size()[1] / 2 + NEOPIXEL_HEIGHT / 2 + y * (LUMA_SIZE + LUMA_SPACING)
+        pygame.draw.rect(application_surface, color, (rect_x, rect_y, LUMA_SIZE, LUMA_SIZE))
 
-        # post-draw
+
+def update_screen():
+    if PI:
+        pixels.show()
+    else:
         pygame.display.update()
-        fps_clock.tick(fps)
 
 
-# constant for empty cell
-blank = '.'
+def terminate():
+    neopixel_fill((0, 0, 0))
+    update_screen()
+    pygame.quit()
+    exit()
+
 
 # state machine
 state_fall = 0
@@ -696,10 +719,21 @@ state_wait_for_controller = 5
 state = StateMachine()
 state.set_state(state_wait)
 
-pygame.init()
+# Init
+if PI:
+    serial = spi(port=0, device=0, gpio=noop())
+    device = max7219(serial, cascaded=4, blocks_arranged_in_reverse_order=True, block_orientation=90)
+    device.contrast(20)
+    pixel_pin = board.D21
+    num_pixels = BOARD_WIDTH * BOARD_HEIGHT
+    pixels = neopixel.NeoPixel(pixel_pin, num_pixels, brightness=0.30, auto_write=False, pixel_order=neopixel.GRB)
+else:
+    pygame.display.set_caption("Tetrus Desktop")
+    application_surface = pygame.display.set_mode((0, 0))
 
-fps = 60
-fps_clock = pygame.time.Clock()
+joystick_detected = False
+pygame.init()
+pygame.joystick.init()
 
 board = Board()
 board.falling_piece = Piece()
@@ -707,12 +741,40 @@ board.board_filler = BoardFiller()
 
 input_manager = InputManager()
 
-led_display = LedDisplay(0, 0, 10, 20, 20)
-matrix_display = MatrixDisplay(0, led_display.width * led_display.pixel_size, 32, 8, 8)
+neopixel_fill((0, 0, 32))
 
-window_size = (board.width * led_display.pixel_size,
-               board.height * led_display.pixel_size + matrix_display.height * matrix_display.pixel_size)
-application_surface = pygame.display.set_mode(window_size)
-pygame.display.set_caption('Tetrus')
+if PI:
+    with canvas(device) as draw:
+        text(draw, (0, 0), "B00BA", fill="white")
+        device.show()
 
-run()
+while True:
+    # Pre-update
+    if not PI:
+        application_surface.fill((54, 87, 219))
+        luma_fill(LUMA_COLOR_OFF)
+    input_manager.update()
+    neopixel_fill((0, 0, 16))
+
+    # update
+    if board.state == state_fall:
+        board.falling_piece.update()
+    elif board.state == state_clear:
+        board.line_cleaner.update()
+    elif board.state == state_fill:
+        board.board_filler.update()
+    elif board.state == state_wait:
+        if input_manager.pressed_any:
+            board.falling_piece.__init__()
+            board.begin_fall_state()
+
+    if input_manager.pressed_quit:
+        terminate()
+
+    # Draw
+    board.update_pixels()
+
+    # Post-draw
+    update_screen()
+
+    time.sleep(0.03)
