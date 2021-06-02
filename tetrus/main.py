@@ -276,7 +276,7 @@ class InputManager:
         for event in pygame.event.get():
             if event.type == QUIT:
                 terminate()
-            if event.type == KEYDOWN:
+            elif event.type == KEYDOWN:
                 self.pressed_any = True
                 if event.key == K_LEFT:
                     self.pressing_left = True
@@ -299,7 +299,7 @@ class InputManager:
                     self.pressed_palette_right = True
                 elif event.key == K_ESCAPE:
                     self.pressed_quit = True
-            if event.type == KEYUP:
+            elif event.type == KEYUP:
                 if event.key == K_DOWN:
                     self.pressing_down = False
                     self.released_down = True
@@ -307,11 +307,11 @@ class InputManager:
                     self.pressing_left = False
                 elif event.key == K_RIGHT:
                     self.pressing_right = False
-            if event.type == JOYBUTTONDOWN:
+            elif event.type == JOYBUTTONDOWN:
                 self.pressed_any = True
                 if event.button == JKEY_X:
                     self.pressed_hard_drop = True
-                elif event.button == JKEY_R:
+                elif event.button == JKEY_SEL:
                     self.pressed_quit = True
                 elif event.button == 2:
                     self.pressed_rotate_left = True
@@ -321,37 +321,27 @@ class InputManager:
                     self.pressed_palette_left = True
                 elif event.button == 4:
                     self.pressed_palette_right = True
-            if event.type == JOYHATMOTION:
-                if event.value[0] == -1:
-                    self.pressing_left = True
-                    self.pressed_left = True
-                elif event.value[0] == 1:
-                    self.pressing_right = True
-                    self.pressed_right = True
-                elif event.value[0] == 0:
-                    self.pressing_left = False
-                    self.pressing_right = False
-                if event.value[1] == -1:
-                    self.pressing_down = True
-                    self.pressed_down = True
-                elif event.value[1] == 1:
-                    self.pressed_hard_drop = True
-                elif event.value[1] == 0:
-                    if self.pressing_down:
-                        self.released_down = True
-                    self.pressing_down = False
-            if event.type == pygame.JOYAXISMOTION:
+            elif event.type == pygame.JOYAXISMOTION:
                 axis = event.axis
                 val = round(event.value)
-                if axis == 0 and val == 0:
-                    self.pressing_left = False
-                    self.pressing_right = False
-                if axis == 0 and val == -1:
-                    self.pressing_left = True
-                    self.pressed_left = True
-                if axis == 0 and val == 1:
-                    self.pressing_right = True
-                    self.pressed_right = True
+                if axis == 0:
+                    if val == 0:
+                        self.pressing_left = False
+                        self.pressing_right = False
+                    elif val == -1:
+                        self.pressing_left = True
+                        self.pressed_left = True
+                    elif val == 1:
+                        self.pressing_right = True
+                        self.pressed_right = True
+                elif axis == 1:
+                    if val == 0:
+                        if self.pressing_down:
+                            self.released_down = True
+                        self.pressing_down = False
+                    elif val == -1:
+                        self.pressed_down = True
+                        self.pressing_down = True
 
 
 class Piece:
