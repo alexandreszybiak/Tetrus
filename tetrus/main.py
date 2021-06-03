@@ -339,7 +339,7 @@ class InputManager:
                         if self.pressing_down:
                             self.released_down = True
                         self.pressing_down = False
-                    elif val == -1:
+                    elif val == 1:
                         self.pressed_down = True
                         self.pressing_down = True
 
