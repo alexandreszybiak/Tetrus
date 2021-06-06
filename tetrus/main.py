@@ -1,5 +1,8 @@
 PI = True
 
+# Constant
+mask = bytearray([1, 2, 4, 8, 16, 32, 64, 128])
+
 # Game Constants
 BOARD_WIDTH = 10
 BOARD_HEIGHT = 20
@@ -107,106 +110,106 @@ if PI:
 
 class ShapeTemplates(Enum):
     S = [['.....',
-                         '.....',
-                         '..OO.',
-                         '.OO..',
-                         '.....'],
-                        ['.....',
-                         '..O..',
-                         '..OO.',
-                         '...O.',
-                         '.....']]
+          '.....',
+          '..OO.',
+          '.OO..',
+          '.....'],
+         ['.....',
+          '..O..',
+          '..OO.',
+          '...O.',
+          '.....']]
 
     Z = [['.....',
-                         '.....',
-                         '.OO..',
-                         '..OO.',
-                         '.....'],
-                        ['.....',
-                         '..O..',
-                         '.OO..',
-                         '.O...',
-                         '.....']]
+          '.....',
+          '.OO..',
+          '..OO.',
+          '.....'],
+         ['.....',
+          '..O..',
+          '.OO..',
+          '.O...',
+          '.....']]
 
     I = [['.....',
-                         '.....',
-                         'OOOO.',
-                         '.....',
-                         '.....'],
-                        ['..O..',
-                         '..O..',
-                         '..O..',
-                         '..O..',
-                         '.....']]
+          '.....',
+          'OOOO.',
+          '.....',
+          '.....'],
+         ['..O..',
+          '..O..',
+          '..O..',
+          '..O..',
+          '.....']]
 
     O = [['.....',
-                         '.....',
-                         '.OO..',
-                         '.OO..',
-                         '.....']]
+          '.....',
+          '.OO..',
+          '.OO..',
+          '.....']]
 
     J = [['.....',
-                         '.....',
-                         '.OOO.',
-                         '...O.',
-                         '.....'],
-                        ['.....',
-                         '..O..',
-                         '..O..',
-                         '.OO..',
-                         '.....'],
-                        ['.....',
-                         '.O...',
-                         '.OOO.',
-                         '.....',
-                         '.....'],
-                        ['.....',
-                         '..OO.',
-                         '..O..',
-                         '..O..',
-                         '.....']]
+          '.....',
+          '.OOO.',
+          '...O.',
+          '.....'],
+         ['.....',
+          '..O..',
+          '..O..',
+          '.OO..',
+          '.....'],
+         ['.....',
+          '.O...',
+          '.OOO.',
+          '.....',
+          '.....'],
+         ['.....',
+          '..OO.',
+          '..O..',
+          '..O..',
+          '.....']]
 
     L = [['.....',
-                         '.....',
-                         '.OOO.',
-                         '.O...',
-                         '.....'],
-                        ['.....',
-                         '.OO..',
-                         '..O..',
-                         '..O..',
-                         '.....'],
-                        ['.....',
-                         '...O.',
-                         '.OOO.',
-                         '.....',
-                         '.....'],
-                        ['.....',
-                         '..O..',
-                         '..O..',
-                         '..OO.',
-                         '.....']]
+          '.....',
+          '.OOO.',
+          '.O...',
+          '.....'],
+         ['.....',
+          '.OO..',
+          '..O..',
+          '..O..',
+          '.....'],
+         ['.....',
+          '...O.',
+          '.OOO.',
+          '.....',
+          '.....'],
+         ['.....',
+          '..O..',
+          '..O..',
+          '..OO.',
+          '.....']]
 
     T = [['.....',
-                         '.....',
-                         '.OOO.',
-                         '..O..',
-                         '.....'],
-                        ['.....',
-                         '..O..',
-                         '.OO..',
-                         '..O..',
-                         '.....'],
-                        ['.....',
-                         '..O..',
-                         '.OOO.',
-                         '.....',
-                         '.....'],
-                        ['.....',
-                         '..O..',
-                         '..OO.',
-                         '..O..',
-                         '.....']]
+          '.....',
+          '.OOO.',
+          '..O..',
+          '.....'],
+         ['.....',
+          '..O..',
+          '.OO..',
+          '..O..',
+          '.....'],
+         ['.....',
+          '..O..',
+          '.OOO.',
+          '.....',
+          '.....'],
+         ['.....',
+          '..O..',
+          '..OO.',
+          '..O..',
+          '.....']]
 
 
 shapes = {'s': ShapeTemplates.S.value,
@@ -216,6 +219,45 @@ shapes = {'s': ShapeTemplates.S.value,
           'i': ShapeTemplates.I.value,
           'o': ShapeTemplates.O.value,
           't': ShapeTemplates.T.value}
+
+
+class ShapePreviews(Enum):
+    S = [0, 1, 1, 0,
+         1, 1, 0, 0]
+    Z = [1, 1, 0, 0,
+         0, 1, 1, 0]
+    I = [1, 1, 1, 1,
+         0, 0, 0, 0]
+    O = [1, 1, 0, 0,
+         1, 1, 0, 0]
+    J = [1, 1, 1, 0,
+         0, 0, 1, 0]
+    L = [1, 1, 1, 0,
+         1, 0, 0, 0]
+    T = [1, 1, 1, 0,
+         0, 1, 0, 0]
+
+
+shape_previews = {'s': ShapePreviews.S.value,
+                  'z': ShapePreviews.Z.value,
+                  'j': ShapePreviews.J.value,
+                  'l': ShapePreviews.L.value,
+                  'i': ShapePreviews.I.value,
+                  'o': ShapePreviews.O.value,
+                  't': ShapePreviews.T.value}
+
+
+PIECES_ORDER = {'s': 0, 'z': 1, 'i': 2, 'j': 3, 'l': 4, 'o': 5, 't': 6}
+
+theTetrisFont = [
+    0x78, 0x78, 0x1E, 0x1E,  # S
+    0x1E, 0x1E, 0x78, 0x78,  # Z
+    0x00, 0xFF, 0xFF, 0x00,  # I
+    0x06, 0x06, 0x7E, 0x7E,  # J
+    0x7E, 0x7E, 0x06, 0x06,  # L
+    0x3C, 0x3C, 0x3C, 0x3C,  # O
+    0x7E, 0x7E, 0x18, 0x18,  # T
+]
 
 
 class StateMachine:
@@ -364,8 +406,8 @@ class Piece:
         self.run_init_time = time.time()
         self.visible = False
 
-    def reset(self):
-        shape_name = random.choice(list(shapes))
+    def reset(self, piece):
+        shape_name = piece
         self.x = 3
         self.y = -2
         self.rotation = 0
@@ -381,8 +423,8 @@ class Piece:
             self.add_to_board(self.color_index)
             self.visible = False
         input_manager.pressing_down = False
-        input_manager.pressing_left = False
-        input_manager.pressing_right = False
+        # input_manager.pressing_left = False
+        # input_manager.pressing_right = False
 
     def update(self):
         if input_manager.released_down:
@@ -562,6 +604,7 @@ class Board:
         self.height = 20
         self.content = []
         self.falling_piece = None
+        self.next_piece = None
         self.line_cleaner = None
         self.board_filler = None
         self.state = state_wait
@@ -585,11 +628,15 @@ class Board:
             return blank
         return self.content[x][y]
 
+    def pick_next_piece(self):
+        self.next_piece = random.choice(list(shapes))
+
     def begin_fall_state(self):
         del self.line_cleaner
         self.line_cleaner = None
         self.state = state_fall
-        self.falling_piece.reset()
+        self.falling_piece.reset(self.next_piece)
+        self.pick_next_piece()
 
     def begin_wait_state(self):
         self.state = state_wait
@@ -607,7 +654,8 @@ class Board:
             self.state = state_clear
             self.line_cleaner = LineCleaner(complete_lines)
         else:
-            self.falling_piece.reset()
+            self.falling_piece.reset(self.next_piece)
+            self.pick_next_piece()
 
     def is_line_complete(self, y):
         for x in range(self.width):
@@ -670,19 +718,39 @@ def luma_fill(color):
     else:
         for y in range(8):
             for x in range(32):
-                luma_draw(x, y, color)
+                luma_draw(x, y, color, application_surface)
 
 
-def luma_draw(x, y, color):
+def luma_draw(x, y, color, draw_surface):
     if PI:
-        with canvas(device) as draw:
-            draw.point((x, y), fill="white")
-        device.show()
+        draw_surface.point((x, y), fill="white")
     else:
         pygame.display.get_window_size()
         rect_x = pygame.display.get_window_size()[0] / 2 - LUMA_WIDTH / 2 + x * (LUMA_SIZE + LUMA_SPACING)
         rect_y = pygame.display.get_window_size()[1] / 2 + NEOPIXEL_HEIGHT / 2 + y * (LUMA_SIZE + LUMA_SPACING)
-        pygame.draw.rect(application_surface, color, (rect_x, rect_y, LUMA_SIZE, LUMA_SIZE))
+        pygame.draw.rect(draw_surface, color, (rect_x, rect_y, LUMA_SIZE, LUMA_SIZE))
+
+
+def luma_draw_piece(piece, offset_x, offset_y, draw_surface):
+    for x in range(0, 8):
+        for y in range(0, 4):
+            index = x//2 + y//2 * 4
+            if shape_previews[piece][index] == 1:
+                luma_draw(offset_x + x, offset_y + y, (255,0,0), draw_surface)
+            else:
+                luma_draw(offset_x + x, offset_y + y, 0, draw_surface)
+
+
+def luma_update_hud(score, level, next_piece):
+    if PI:
+        # one point per level
+        with canvas(device) as draw_surface:
+            # draw next piece
+            luma_draw_piece(next_piece, 1, 1, draw_surface)
+
+            device.show()
+    else:
+        luma_draw_piece(next_piece, 1, 1, application_surface)
 
 
 def update_screen():
@@ -733,11 +801,6 @@ input_manager = InputManager()
 
 neopixel_fill((0, 0, 32))
 
-if PI:
-    with canvas(device) as draw:
-        text(draw, (0, 0), "B00BA", fill="white")
-        device.show()
-
 while True:
     # Pre-update
     if not PI:
@@ -756,6 +819,7 @@ while True:
     elif board.state == state_wait:
         if input_manager.pressed_any:
             board.falling_piece.__init__()
+            board.pick_next_piece()
             board.begin_fall_state()
 
     if input_manager.pressed_quit:
@@ -763,6 +827,8 @@ while True:
 
     # Draw
     board.update_pixels()
+    if board.next_piece is not None:
+        luma_update_hud(0, 0, board.next_piece)
 
     # Post-draw
     update_screen()
