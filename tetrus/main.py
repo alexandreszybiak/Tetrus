@@ -1,4 +1,4 @@
-PI = True
+PI = False
 
 # Constant
 mask = bytearray([1, 2, 4, 8, 16, 32, 64, 128])
@@ -39,7 +39,7 @@ colors_default = [0x000000,  # background
                   0xe82a4d,  # i
                   0xf54e5d,  # o
                   0xff7c6b,  # t
-                  0x111111,  # piece shadow
+                  0x555555,  # piece shadow
                   0x989898,  # placed_piece
                   0xff0000  # death_fill
                   ]
@@ -52,7 +52,7 @@ colors_blue = [0x000000,  # background
                0x49ebf5,  # i
                0x4982f5,  # o
                0x4982f5,  # t
-               0x111111,  # piece shadow
+               0x222222,  # piece shadow
                0x5f5f5f,  # placed_piece
                0xff0000  # death_fill
                ]
@@ -87,6 +87,7 @@ color_palettes = [colors_blue, colors_default, colors_bubble]
 
 # Color Constants
 BLACK = (0, 0, 16)
+NEOPIXEL_SIMULATOR_COLOR_OFF = (16,16,16)
 
 # Constant for empty cell
 blank = '.'
@@ -737,8 +738,6 @@ def luma_draw_piece(piece, offset_x, offset_y, draw_surface):
             index = x//2 + y//2 * 4
             if shape_previews[piece][index] == 1:
                 luma_draw(offset_x + x, offset_y + y, (255,0,0), draw_surface)
-            else:
-                luma_draw(offset_x + x, offset_y + y, 0, draw_surface)
 
 
 def luma_update_hud(score, level, next_piece):
@@ -804,10 +803,10 @@ neopixel_fill((0, 0, 32))
 while True:
     # Pre-update
     if not PI:
-        application_surface.fill((54, 87, 219))
+        application_surface.fill((0, 0, 0))
         luma_fill(LUMA_COLOR_OFF)
     input_manager.update()
-    neopixel_fill((0, 0, 16))
+    neopixel_fill(NEOPIXEL_SIMULATOR_COLOR_OFF)
 
     # update
     if board.state == state_fall:
