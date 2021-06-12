@@ -1,4 +1,4 @@
-PI = False
+PI = True
 
 # Constant
 mask = bytearray([1, 2, 4, 8, 16, 32, 64, 128])
@@ -87,7 +87,7 @@ color_palettes = [colors_blue, colors_default, colors_bubble]
 
 # Color Constants
 BLACK = (0, 0, 16)
-NEOPIXEL_SIMULATOR_COLOR_OFF = (16,16,16)
+NEOPIXEL_SIMULATOR_COLOR_OFF = (16, 16, 16)
 
 # Constant for empty cell
 blank = '.'
@@ -239,6 +239,18 @@ class ShapePreviews(Enum):
          0, 1, 0, 0]
 
 
+number_font = [
+    0x1F, 0x11, 0x1F,
+    0x00, 0x00, 0x1F,
+    0x1D, 0x15, 0x17,
+    0x15, 0x15, 0x1F,
+    0x07, 0x04, 0x1F,
+    0x17, 0x15, 0x1D,
+    0x1F, 0x15, 0x1D,
+    0x01, 0x01, 0x1F,
+    0x1F, 0x15, 0x1F,
+    0x17, 0x15, 0x1F]
+
 shape_previews = {'s': ShapePreviews.S.value,
                   'z': ShapePreviews.Z.value,
                   'j': ShapePreviews.J.value,
@@ -246,7 +258,6 @@ shape_previews = {'s': ShapePreviews.S.value,
                   'i': ShapePreviews.I.value,
                   'o': ShapePreviews.O.value,
                   't': ShapePreviews.T.value}
-
 
 PIECES_ORDER = {'s': 0, 'z': 1, 'i': 2, 'j': 3, 'l': 4, 'o': 5, 't': 6}
 
@@ -587,6 +598,7 @@ class LineCleaner:
                 for y in self.target_list:
                     board.set_cell(self.progress, y, blank)
                 self.last_clean_time = time.time()
+                board.score += 40
             self.progress += 1
 
     def collapse_gaps(self):
@@ -609,6 +621,7 @@ class Board:
         self.line_cleaner = None
         self.board_filler = None
         self.state = state_wait
+        self.score = 0
         for i in range(self.width):
             self.content.append([blank] * self.height)
 
@@ -735,20 +748,36 @@ def luma_draw(x, y, color, draw_surface):
 def luma_draw_piece(piece, offset_x, offset_y, draw_surface):
     for x in range(0, 8):
         for y in range(0, 4):
-            index = x//2 + y//2 * 4
+            index = x // 2 + y // 2 * 4
             if shape_previews[piece][index] == 1:
-                luma_draw(offset_x + x, offset_y + y, (255,0,0), draw_surface)
+                luma_draw(offset_x + x, offset_y + y, (255, 0, 0), draw_surface)
+
+
+def luma_draw_score(number, offset_x, offset_y, draw_surface):
+    for x in range(0, 3):
+        for y in range(0, 5):
+            if number_font[3 * number + x] & mask[y]:
+                luma_draw(offset_x + x, offset_y + y, (255, 0, 0), draw_surface)
 
 
 def luma_update_hud(score, level, next_piece):
+    _score = score
     if PI:
         # one point per level
         with canvas(device) as draw_surface:
+
+            for i in range(0, 6):
+                luma_draw_score(_score % 10, 32 - i * 4, 1, draw_surface)
+                _score //= 10
+
             # draw next piece
             luma_draw_piece(next_piece, 1, 1, draw_surface)
 
             device.show()
     else:
+        for i in range(0, 6):
+            luma_draw_score(_score % 10, 32 - i * 4, 1, application_surface)
+            _score //= 10
         luma_draw_piece(next_piece, 1, 1, application_surface)
 
 
@@ -817,6 +846,7 @@ while True:
         board.board_filler.update()
     elif board.state == state_wait:
         if input_manager.pressed_any:
+            board.score = 0
             board.falling_piece.__init__()
             board.pick_next_piece()
             board.begin_fall_state()
@@ -827,7 +857,7 @@ while True:
     # Draw
     board.update_pixels()
     if board.next_piece is not None:
-        luma_update_hud(0, 0, board.next_piece)
+        luma_update_hud(board.score, 0, board.next_piece)
 
     # Post-draw
     update_screen()
