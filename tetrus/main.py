@@ -44,31 +44,109 @@ colors_default = [0x000000,  # background
                   0xff0000  # death_fill
                   ]
 
-colors_blue = [0x000000,  # background
-               0xffffff,  # s
-               0xff412e,  # z
-               0xffffff,  # j
-               0xff412e,  # l
-               0x49ebf5,  # i
-               0x4982f5,  # o
-               0x4982f5,  # t
-               0x222222,  # piece shadow
-               0x5f5f5f,  # placed_piece
-               0xff0000  # death_fill
-               ]
+colors_meadow = [0x000000,  # background
+                0x5096ff,  # s
+                0x5096ff,  # z
+                0x5096ff,  # j
+                0x5096ff,  # l
+                0x5096ff,  # i
+                0x5096ff,  # o
+                0x5096ff,  # t
+                0x272b29,  # piece shadow
+                0x5da93c,  # placed_piece
+                0xff0000  # death_fill
+                ]
 
 colors_bubble = [0x000000,  # background
-                 0xffffff,  # s
-                 0xf6ff00,  # z
-                 0xf6ff00,  # j
-                 0xffffff,  # l
-                 0xf6ff00,  # i
-                 0xf6ff00,  # o
-                 0xf6ff00,  # t
-                 0x111111,  # piece shadow
-                 0xff00a8,  # placed_piece
+                 0xfff840,  # s
+                 0xfff840,  # z
+                 0xfff840,  # j
+                 0xfff840,  # l
+                 0xfff840,  # i
+                 0xfff840,  # o
+                 0xfff840,  # t
+                 0x53071c,  # piece shadow
+                 0xf33087,  # placed_piece
                  0xff0000  # death_fill
                  ]
+
+colors_spring = [0x000000,  # background
+                 0x91ea1f,  # s
+                 0x91ea1f,  # z
+                 0x91ea1f,  # j
+                 0x91ea1f,  # l
+                 0x91ea1f,  # i
+                 0x91ea1f,  # o
+                 0x91ea1f,  # t
+                 0x0b3248,  # piece shadow
+                 0xe65987,  # placed_piece
+                 0xff0000  # death_fill
+                 ]
+
+colors_autumn = [0x000000,  # background
+                 0x5f991c,  # s
+                 0x5f991c,  # z
+                 0x5f991c,  # j
+                 0x5f991c,  # l
+                 0x5f991c,  # i
+                 0x5f991c,  # o
+                 0x5f991c,  # t
+                 0x322610,  # piece shadow
+                 0x883e25,  # placed_piece
+                 0xff0000  # death_fill
+                 ]
+
+colors_grey = [0x000000,  # background
+                0x6d7e74,  # s
+                0x6d7e74,  # z
+                0x6d7e74,  # j
+                0x6d7e74,  # l
+                0x6d7e74,  # i
+                0x6d7e74,  # o
+                0x6d7e74,  # t
+                0x2b2d2c,  # piece shadow
+                0x545e57,  # placed_piece
+                0xff0000  # death_fill
+                ]
+
+colors_night = [0x000000,  # background
+                0x3131d4,  # s
+                0x3131d4,  # z
+                0x3131d4,  # j
+                0x3131d4,  # l
+                0x3131d4,  # i
+                0x3131d4,  # o
+                0x3131d4,  # t
+                0x1b1730,  # piece shadow
+                0x1f1f72,  # placed_piece
+                0xff0000  # death_fill
+                ]
+
+colors_joker = [0x000000,  # background
+                0x42ec0e,  # s
+                0x42ec0e,  # z
+                0x42ec0e,  # j
+                0x42ec0e,  # l
+                0x42ec0e,  # i
+                0x42ec0e,  # o
+                0x42ec0e,  # t
+                0x50008d,  # piece shadow
+                0xb500cb,  # placed_piece
+                0xff0000  # death_fill
+                ]
+
+colors_lava = [0x000000,  # background
+                0xed5e2d,  # s
+                0xed5e2d,  # z
+                0xed5e2d,  # j
+                0xed5e2d,  # l
+                0xed5e2d,  # i
+                0xed5e2d,  # o
+                0xed5e2d,  # t
+                0x8e0014,  # piece shadow
+                0xd8341e,  # placed_piece
+                0xff0000  # death_fill
+                ]
 
 color_indexes = {"background": 0,
                  "s": 1,
@@ -83,11 +161,12 @@ color_indexes = {"background": 0,
                  "death_fill": 10
                  }
 
-color_palettes = [colors_blue, colors_default, colors_bubble]
+color_palettes = [colors_meadow, colors_spring, colors_autumn, colors_grey, colors_night, colors_bubble, colors_lava, colors_joker]
 
 # Color Constants
-BLACK = (0, 0, 16)
-NEOPIXEL_SIMULATOR_COLOR_OFF = (16, 16, 16)
+BLACK = (0, 0, 0)
+NEOPIXEL_SIMULATOR_COLOR_OFF = (0, 0, 0)
+SIMULATOR_BACKGROUND = (24, 24, 24)
 
 # Constant for empty cell
 blank = '.'
@@ -396,6 +475,25 @@ class InputManager:
                     elif val == 1:
                         self.pressed_down = True
                         self.pressing_down = True
+            elif event.type == JOYHATMOTION:
+                if event.value[0] == -1:
+                    self.pressing_left = True
+                    self.pressed_left = True
+                elif event.value[0] == 1:
+                    self.pressing_right = True
+                    self.pressed_right = True
+                elif event.value[0] == 0:
+                    self.pressing_left = False
+                    self.pressing_right = False
+                if event.value[1] == -1:
+                    self.pressing_down = True
+                    self.pressed_down = True
+                elif event.value[1] == 1:
+                    self.pressed_hard_drop = True
+                elif event.value[1] == 0:
+                    if self.pressing_down:
+                        self.released_down = True
+                    self.pressing_down = False
 
 
 class Piece:
@@ -520,13 +618,13 @@ class Piece:
                     continue
                 if y + self.y + add_y < 0:
                     continue
-                neopixel_draw(x + self.x + add_x, y + self.y + add_y, color_palettes[0][color])
+                neopixel_draw(x + self.x + add_x, y + self.y + add_y, color_palettes[board.level % len(color_palettes)][color])
 
     def hard_drop(self):
         if not self.is_valid_position(add_y=1):
             return
         self.y += self.get_drop_position()
-        self.last_fall_time = time.time() - (self.fall_frequency * 0.7)
+        self.add_to_board()
 
     def get_drop_position(self):
         for i in range(1, board.height - self.y):
@@ -590,14 +688,19 @@ class LineCleaner:
 
     def update(self):
         if time.time() - self.last_clean_time > self.clean_frequency:
-            if self.progress == 10:
+            if self.progress == 5:
                 self.collapse_gaps()
                 board.begin_fall_state()
-                board.falling_piece.speed_up()
+                if board.total_line_cleared // 10 > board.level:
+                    board.level += 1
+                    board.falling_piece.speed_up()
             else:
                 for y in self.target_list:
-                    board.set_cell(self.progress, y, blank)
+                    board.set_cell(4 - self.progress, y, blank)
+                    board.set_cell(5 + self.progress, y, blank)
                 self.last_clean_time = time.time()
+                if self.progress < len(self.target_list):
+                    board.total_line_cleared += 1
                 board.score += 40
             self.progress += 1
 
@@ -622,10 +725,16 @@ class Board:
         self.board_filler = None
         self.state = state_wait
         self.score = 0
+        self.total_line_cleared = 0
+        self.level = 0
         for i in range(self.width):
             self.content.append([blank] * self.height)
 
     def reset(self):
+        self.score = 0
+        self.total_line_cleared = 0
+        self.level = 0
+        self.next_piece = None
         for x in range(self.width):
             for y in range(self.height):
                 self.set_cell(x, y, blank)
@@ -691,7 +800,7 @@ class Board:
         for x in range(self.width):
             for y in range(self.height):
                 if self.content[x][y] != blank:
-                    neopixel_draw(x, y, color_palettes[0][self.content[x][y]])
+                    neopixel_draw(x, y, color_palettes[self.level % len(color_palettes)][self.content[x][y]])
         self.falling_piece.update_pixels(color_indexes["piece_shadow"], add_y=self.falling_piece.get_drop_position())
         self.falling_piece.update_pixels(self.falling_piece.color_index)
 
@@ -760,25 +869,39 @@ def luma_draw_score(number, offset_x, offset_y, draw_surface):
                 luma_draw(offset_x + x, offset_y + y, (255, 0, 0), draw_surface)
 
 
-def luma_update_hud(score, level, next_piece):
+def luma_update_hud(score, num_line, level, next_piece):
     _score = score
+    _num_line = num_line
     if PI:
         # one point per level
         with canvas(device) as draw_surface:
-
-            for i in range(0, 6):
-                luma_draw_score(_score % 10, 32 - i * 4, 1, draw_surface)
-                _score //= 10
+            # draw score
+            if _score != -1:
+                for i in range(0, 6):
+                    luma_draw_score(_score % 10, 29 - i * 4, 0, draw_surface)
+                    _score //= 10
+            elif _num_line != -1:
+                for i in range(0, 3):
+                    luma_draw_score(_num_line % 10, 29 - i * 4, 0, draw_surface)
+                    _num_line //= 10
 
             # draw next piece
-            luma_draw_piece(next_piece, 1, 1, draw_surface)
+            luma_draw_piece(next_piece, 0, 0, draw_surface)
 
             device.show()
     else:
-        for i in range(0, 6):
-            luma_draw_score(_score % 10, 32 - i * 4, 1, application_surface)
-            _score //= 10
-        luma_draw_piece(next_piece, 1, 1, application_surface)
+        # draw score
+        if _score != -1:
+            for i in range(0, 6):
+                luma_draw_score(_score % 10, 29 - i * 4, 0, application_surface)
+                _score //= 10
+        elif _num_line != -1:
+            for i in range(0, 3):
+                luma_draw_score(_num_line % 10, 29 - i * 4, 0, application_surface)
+                _num_line //= 10
+
+        # draw next piece
+        luma_draw_piece(next_piece, 0, 0, application_surface)
 
 
 def update_screen():
@@ -832,7 +955,7 @@ neopixel_fill((0, 0, 32))
 while True:
     # Pre-update
     if not PI:
-        application_surface.fill((0, 0, 0))
+        application_surface.fill(SIMULATOR_BACKGROUND)
         luma_fill(LUMA_COLOR_OFF)
     input_manager.update()
     neopixel_fill(NEOPIXEL_SIMULATOR_COLOR_OFF)
@@ -846,7 +969,6 @@ while True:
         board.board_filler.update()
     elif board.state == state_wait:
         if input_manager.pressed_any:
-            board.score = 0
             board.falling_piece.__init__()
             board.pick_next_piece()
             board.begin_fall_state()
@@ -857,7 +979,7 @@ while True:
     # Draw
     board.update_pixels()
     if board.next_piece is not None:
-        luma_update_hud(board.score, 0, board.next_piece)
+        luma_update_hud(-1, board.total_line_cleared, 0, board.next_piece)
 
     # Post-draw
     update_screen()
