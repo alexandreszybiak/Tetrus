@@ -45,17 +45,17 @@ colors_default = [0x000000,  # background
                   ]
 
 colors_meadow = [0x000000,  # background
-                0x5096ff,  # s
-                0x5096ff,  # z
-                0x5096ff,  # j
-                0x5096ff,  # l
-                0x5096ff,  # i
-                0x5096ff,  # o
-                0x5096ff,  # t
-                0x272b29,  # piece shadow
-                0x5da93c,  # placed_piece
-                0xff0000  # death_fill
-                ]
+                 0x5096ff,  # s
+                 0x5096ff,  # z
+                 0x5096ff,  # j
+                 0x5096ff,  # l
+                 0x5096ff,  # i
+                 0x5096ff,  # o
+                 0x5096ff,  # t
+                 0x272b29,  # piece shadow
+                 0x5da93c,  # placed_piece
+                 0xff0000  # death_fill
+                 ]
 
 colors_bubble = [0x000000,  # background
                  0xfff840,  # s
@@ -97,17 +97,17 @@ colors_autumn = [0x000000,  # background
                  ]
 
 colors_grey = [0x000000,  # background
-                0x6d7e74,  # s
-                0x6d7e74,  # z
-                0x6d7e74,  # j
-                0x6d7e74,  # l
-                0x6d7e74,  # i
-                0x6d7e74,  # o
-                0x6d7e74,  # t
-                0x2b2d2c,  # piece shadow
-                0x545e57,  # placed_piece
-                0xff0000  # death_fill
-                ]
+               0x6d7e74,  # s
+               0x6d7e74,  # z
+               0x6d7e74,  # j
+               0x6d7e74,  # l
+               0x6d7e74,  # i
+               0x6d7e74,  # o
+               0x6d7e74,  # t
+               0x2b2d2c,  # piece shadow
+               0x545e57,  # placed_piece
+               0xff0000  # death_fill
+               ]
 
 colors_night = [0x000000,  # background
                 0x3131d4,  # s
@@ -136,17 +136,17 @@ colors_joker = [0x000000,  # background
                 ]
 
 colors_lava = [0x000000,  # background
-                0xed5e2d,  # s
-                0xed5e2d,  # z
-                0xed5e2d,  # j
-                0xed5e2d,  # l
-                0xed5e2d,  # i
-                0xed5e2d,  # o
-                0xed5e2d,  # t
-                0x8e0014,  # piece shadow
-                0xd8341e,  # placed_piece
-                0xff0000  # death_fill
-                ]
+               0xed5e2d,  # s
+               0xed5e2d,  # z
+               0xed5e2d,  # j
+               0xed5e2d,  # l
+               0xed5e2d,  # i
+               0xed5e2d,  # o
+               0xed5e2d,  # t
+               0x8e0014,  # piece shadow
+               0xd8341e,  # placed_piece
+               0xff0000  # death_fill
+               ]
 
 color_indexes = {"background": 0,
                  "s": 1,
@@ -161,7 +161,8 @@ color_indexes = {"background": 0,
                  "death_fill": 10
                  }
 
-color_palettes = [colors_meadow, colors_spring, colors_autumn, colors_grey, colors_night, colors_bubble, colors_lava, colors_joker]
+color_palettes = [colors_meadow, colors_spring, colors_autumn, colors_grey, colors_night, colors_bubble, colors_lava,
+                  colors_joker]
 
 # Color Constants
 BLACK = (0, 0, 0)
@@ -515,6 +516,7 @@ class Piece:
         self.last_run_time = time.time()
         self.run_init_time = time.time()
         self.visible = False
+        self.drop_row_count = 0
 
     def reset(self, piece):
         shape_name = piece
@@ -528,6 +530,7 @@ class Piece:
         self.last_run_time = time.time()
         self.run_init_time = time.time()
         self.visible = True
+        self.drop_row_count = 0
         if not self.is_valid_position(add_x=0, add_y=0):
             board.begin_fill_state()
             self.add_to_board(self.color_index)
@@ -539,6 +542,7 @@ class Piece:
     def update(self):
         if input_manager.released_down:
             self.last_fall_time = time.time()
+            self.drop_row_count = 0
             if not self.is_valid_position(add_y=1):
                 self.add_to_board()
         # move horizontally
@@ -605,6 +609,7 @@ class Piece:
     def soft_drop(self):
         if time.time() - self.last_soft_drop_time > self.press_down_frequency:
             self.move_vertical()
+            self.drop_row_count += 1
             self.last_soft_drop_time = time.time()
             if not self.is_valid_position(add_y=1):
                 self.last_soft_drop_time = time.time() + (self.press_down_frequency * 5)
@@ -618,12 +623,15 @@ class Piece:
                     continue
                 if y + self.y + add_y < 0:
                     continue
-                neopixel_draw(x + self.x + add_x, y + self.y + add_y, color_palettes[board.level % len(color_palettes)][color])
+                neopixel_draw(x + self.x + add_x, y + self.y + add_y,
+                              color_palettes[board.level % len(color_palettes)][color])
 
     def hard_drop(self):
         if not self.is_valid_position(add_y=1):
             return
-        self.y += self.get_drop_position()
+        row_count = self.get_drop_position()
+        self.y += row_count
+        self.drop_row_count = row_count << 1
         self.add_to_board()
 
     def get_drop_position(self):
@@ -638,6 +646,8 @@ class Piece:
                 if self.shape[self.rotation][y][x] != blank:
                     board.set_cell(x + self.x, y + self.y, color_index)
         self.visible = False
+        board.hud_show_lines = False
+        board.score += self.drop_row_count
         if board.state == state_fall:
             board.check_for_complete_line()
 
@@ -685,6 +695,15 @@ class LineCleaner:
         self.progress = 0
         self.last_clean_time = 0
         self.clean_frequency = 0.05
+        self.points_to_give = 0
+        if len(self.target_list) == 1:
+            self.points_to_give = 40 * (board.level + 1) // 5
+        elif len(self.target_list) == 2:
+            self.points_to_give = 100 * (board.level + 1) // 5
+        elif len(self.target_list) == 3:
+            self.points_to_give = 300 * (board.level + 1) // 5
+        else:
+            self.points_to_give = 1200 * (board.level + 1) // 5
 
     def update(self):
         if time.time() - self.last_clean_time > self.clean_frequency:
@@ -701,7 +720,7 @@ class LineCleaner:
                 self.last_clean_time = time.time()
                 if self.progress < len(self.target_list):
                     board.total_line_cleared += 1
-                board.score += 40
+                board.score += self.points_to_give
             self.progress += 1
 
     def collapse_gaps(self):
@@ -727,6 +746,7 @@ class Board:
         self.score = 0
         self.total_line_cleared = 0
         self.level = 0
+        self.hud_show_lines = False
         for i in range(self.width):
             self.content.append([blank] * self.height)
 
@@ -776,6 +796,7 @@ class Board:
         if len(complete_lines) > 0:
             self.state = state_clear
             self.line_cleaner = LineCleaner(complete_lines)
+            self.hud_show_lines = True
         else:
             self.falling_piece.reset(self.next_piece)
             self.pick_next_piece()
@@ -979,7 +1000,10 @@ while True:
     # Draw
     board.update_pixels()
     if board.next_piece is not None:
-        luma_update_hud(-1, board.total_line_cleared, 0, board.next_piece)
+        if board.hud_show_lines:
+            luma_update_hud(-1, board.total_line_cleared, 0, board.next_piece)
+        else:
+            luma_update_hud(board.score, -1, 0, board.next_piece)
 
     # Post-draw
     update_screen()
