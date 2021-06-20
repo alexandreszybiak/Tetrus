@@ -1,4 +1,4 @@
-PI = True
+PI = False
 
 # Constant
 mask = bytearray([1, 2, 4, 8, 16, 32, 64, 128])
@@ -362,6 +362,14 @@ theTetrisFont = [
 ]
 
 
+class Sprite:
+    def update(self):
+        pass
+
+    def draw(self):
+        pass
+
+
 class StateMachine:
     def __init__(self):
         self.state = None
@@ -507,7 +515,7 @@ class InputManager:
                     self.pressing_down = False
 
 
-class Piece:
+class Piece(Sprite):
     def __init__(self):
         shape_name = random.choice(list(shapes))
         self.x = 3
@@ -624,9 +632,13 @@ class Piece:
             if not self.is_valid_position(add_y=1):
                 self.last_soft_drop_time = time.time() + (self.press_down_frequency * 5)
 
-    def update_pixels(self, color, add_x=0, add_y=0):
+    def draw(self):
         if not self.visible:
             return
+        self.draw_piece(color_indexes["piece_shadow"], add_y=self.get_drop_position())
+        self.draw_piece(self.color_index)
+
+    def draw_piece(self, color, add_x=0, add_y=0):
         for x in range(self.template_width):
             for y in range(self.template_height):
                 if self.shape[self.rotation][y][x] == blank:
@@ -746,7 +758,7 @@ class LineCleaner:
                 board.content[x][0] = blank
 
 
-class Board:
+class Board(Sprite):
     def __init__(self):
         self.width = 10
         self.height = 20
@@ -830,13 +842,68 @@ class Board:
         self.state = state_clear
         LineCleaner()
 
-    def update_pixels(self):
+    def draw(self):
         for x in range(self.width):
             for y in range(self.height):
                 if self.content[x][y] != blank:
                     neopixel_draw(x, y, color_palettes[self.level % len(color_palettes)][self.content[x][y]])
-        self.falling_piece.update_pixels(color_indexes["piece_shadow"], add_y=self.falling_piece.get_drop_position())
-        self.falling_piece.update_pixels(self.falling_piece.color_index)
+
+
+class HUD(Sprite):
+    def __init__(self):
+        self.show_lines = False
+
+    @staticmethod
+    def draw_piece(piece, offset_x, offset_y, draw_surface):
+        for x in range(0, 8):
+            for y in range(0, 4):
+                index = x // 2 + y // 2 * 4
+                if shape_previews[piece][index] == 1:
+                    luma_draw(offset_x + x, offset_y + y, (255, 0, 0), draw_surface)
+
+    @staticmethod
+    def draw_score(number, offset_x, offset_y, draw_surface):
+        for x in range(0, 3):
+            for y in range(0, 5):
+                if number_font[3 * number + x] & mask[y]:
+                    luma_draw(offset_x + x, offset_y + y, (255, 0, 0), draw_surface)
+
+    def draw(self):
+        _score = board.score
+        _num_line = board.total_line_cleared
+        if PI:
+            # one point per level
+            with canvas(device) as draw_surface:
+                # draw score
+                if not self.show_lines:
+                    for i in range(0, 6):
+                        self.draw_score(_score % 10, 29 - i * 4, 0, draw_surface)
+                        _score //= 10
+                else:
+                    for i in range(0, 3):
+                        self.draw_score(_num_line % 10, 29 - i * 4, 0, draw_surface)
+                        _num_line //= 10
+
+                # draw next piece
+                if board.next_piece is not None:
+                    self.draw_piece(board.next_piece, 0, 0, draw_surface)
+
+                device.show()
+        else:
+            # draw score
+            if not self.show_lines:
+                for i in range(0, 6):
+                    self.draw_score(_score % 10, 29 - i * 4, 0, application_surface)
+                    _score //= 10
+            else:
+                for i in range(0, 3):
+                    self.draw_score(_num_line % 10, 29 - i * 4, 0, application_surface)
+                    _num_line //= 10
+
+            # draw next piece
+            if board.next_piece is not None:
+                self.draw_piece(board.next_piece, 0, 0, application_surface)
+
 
 
 def is_on_board(x, y):
@@ -888,56 +955,6 @@ def luma_draw(x, y, color, draw_surface):
         pygame.draw.rect(draw_surface, color, (rect_x, rect_y, LUMA_SIZE, LUMA_SIZE))
 
 
-def luma_draw_piece(piece, offset_x, offset_y, draw_surface):
-    for x in range(0, 8):
-        for y in range(0, 4):
-            index = x // 2 + y // 2 * 4
-            if shape_previews[piece][index] == 1:
-                luma_draw(offset_x + x, offset_y + y, (255, 0, 0), draw_surface)
-
-
-def luma_draw_score(number, offset_x, offset_y, draw_surface):
-    for x in range(0, 3):
-        for y in range(0, 5):
-            if number_font[3 * number + x] & mask[y]:
-                luma_draw(offset_x + x, offset_y + y, (255, 0, 0), draw_surface)
-
-
-def luma_update_hud(score, num_line, level, next_piece):
-    _score = score
-    _num_line = num_line
-    if PI:
-        # one point per level
-        with canvas(device) as draw_surface:
-            # draw score
-            if _score != -1:
-                for i in range(0, 6):
-                    luma_draw_score(_score % 10, 29 - i * 4, 0, draw_surface)
-                    _score //= 10
-            elif _num_line != -1:
-                for i in range(0, 3):
-                    luma_draw_score(_num_line % 10, 29 - i * 4, 0, draw_surface)
-                    _num_line //= 10
-
-            # draw next piece
-            luma_draw_piece(next_piece, 0, 0, draw_surface)
-
-            device.show()
-    else:
-        # draw score
-        if _score != -1:
-            for i in range(0, 6):
-                luma_draw_score(_score % 10, 29 - i * 4, 0, application_surface)
-                _score //= 10
-        elif _num_line != -1:
-            for i in range(0, 3):
-                luma_draw_score(_num_line % 10, 29 - i * 4, 0, application_surface)
-                _num_line //= 10
-
-        # draw next piece
-        luma_draw_piece(next_piece, 0, 0, application_surface)
-
-
 def update_screen():
     if PI:
         pixels.show()
@@ -982,17 +999,23 @@ board = Board()
 board.falling_piece = Piece()
 board.board_filler = BoardFiller()
 
+hud = HUD()
+
 input_manager = InputManager()
+
+draw_list = [board, board.falling_piece, hud]
 
 neopixel_fill((0, 0, 32))
 
 while True:
-    # Pre-update
+    # Pre-draw
     if not PI:
         application_surface.fill(SIMULATOR_BACKGROUND)
         luma_fill(LUMA_COLOR_OFF)
-    input_manager.update()
     neopixel_fill(NEOPIXEL_SIMULATOR_COLOR_OFF)
+
+    # Pre-update
+    input_manager.update()
 
     # update
     if board.state == state_fall:
@@ -1011,12 +1034,8 @@ while True:
         terminate()
 
     # Draw
-    board.update_pixels()
-    if board.next_piece is not None:
-        if board.hud_show_lines:
-            luma_update_hud(-1, board.total_line_cleared, 0, board.next_piece)
-        else:
-            luma_update_hud(board.score, -1, 0, board.next_piece)
+    for sprite in draw_list:
+        sprite.draw()
 
     # Post-draw
     update_screen()
