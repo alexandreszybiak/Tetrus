@@ -41,7 +41,8 @@ colors_default = [0x000000,  # background
                   0xff7c6b,  # t
                   0x555555,  # piece shadow
                   0x989898,  # placed_piece
-                  0xff0000  # death_fill
+                  0xff0000,  # death_fill
+                  0xffffff   # cleared piece
                   ]
 
 colors_meadow = [0x000000,  # background
@@ -54,7 +55,8 @@ colors_meadow = [0x000000,  # background
                  0x5096ff,  # t
                  0x272b29,  # piece shadow
                  0x5da93c,  # placed_piece
-                 0xff0000  # death_fill
+                 0xff0000,  # death_fill
+                 0xffffff   # cleared piece
                  ]
 
 colors_bubble = [0x000000,  # background
@@ -67,7 +69,8 @@ colors_bubble = [0x000000,  # background
                  0xfff840,  # t
                  0x53071c,  # piece shadow
                  0xf33087,  # placed_piece
-                 0xff0000  # death_fill
+                 0xff0000,  # death_fill
+                 0xffffff   # cleared piece
                  ]
 
 colors_spring = [0x000000,  # background
@@ -80,7 +83,8 @@ colors_spring = [0x000000,  # background
                  0x91ea1f,  # t
                  0x0b3248,  # piece shadow
                  0xe65987,  # placed_piece
-                 0xff0000  # death_fill
+                 0xff0000,  # death_fill
+                 0xffffff   # cleared piece
                  ]
 
 colors_autumn = [0x000000,  # background
@@ -93,7 +97,8 @@ colors_autumn = [0x000000,  # background
                  0x5f991c,  # t
                  0x322610,  # piece shadow
                  0x883e25,  # placed_piece
-                 0xff0000  # death_fill
+                 0xff0000,  # death_fill
+                 0xffffff   # cleared piece
                  ]
 
 colors_grey = [0x000000,  # background
@@ -106,7 +111,8 @@ colors_grey = [0x000000,  # background
                0x6d7e74,  # t
                0x2b2d2c,  # piece shadow
                0x545e57,  # placed_piece
-               0xff0000  # death_fill
+               0xff0000,  # death_fill
+               0xffffff   # cleared piece
                ]
 
 colors_night = [0x000000,  # background
@@ -119,8 +125,9 @@ colors_night = [0x000000,  # background
                 0x3131d4,  # t
                 0x1b1730,  # piece shadow
                 0x1f1f72,  # placed_piece
-                0xff0000  # death_fill
-                ]
+                0xff0000,  # death_fill
+                 0xffffff   # cleared piece
+                 ]
 
 colors_joker = [0x000000,  # background
                 0x42ec0e,  # s
@@ -132,8 +139,9 @@ colors_joker = [0x000000,  # background
                 0x42ec0e,  # t
                 0x50008d,  # piece shadow
                 0xb500cb,  # placed_piece
-                0xff0000  # death_fill
-                ]
+                0xff0000,  # death_fill
+                 0xffffff   # cleared piece
+                 ]
 
 colors_lava = [0x000000,  # background
                0xed5e2d,  # s
@@ -145,8 +153,9 @@ colors_lava = [0x000000,  # background
                0xed5e2d,  # t
                0x8e0014,  # piece shadow
                0xd8341e,  # placed_piece
-               0xff0000  # death_fill
-               ]
+               0xff0000,  # death_fill
+                 0xffffff   # cleared piece
+                 ]
 
 color_indexes = {"background": 0,
                  "s": 1,
@@ -158,7 +167,8 @@ color_indexes = {"background": 0,
                  "t": 7,
                  "piece_shadow": 8,
                  "placed_piece": 9,
-                 "death_fill": 10
+                 "death_fill": 10,
+                 "cleared line": 11
                  }
 
 color_palettes = [colors_meadow, colors_spring, colors_autumn, colors_grey, colors_night, colors_bubble, colors_lava,
@@ -704,6 +714,9 @@ class LineCleaner:
             self.points_to_give = 300 * (board.level + 1) // 5
         else:
             self.points_to_give = 1200 * (board.level + 1) // 5
+        for y in self.target_list:
+            for x in range(0,10):
+                board.set_cell(x , y, color_indexes["cleared line"])
 
     def update(self):
         if time.time() - self.last_clean_time > self.clean_frequency:
