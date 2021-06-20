@@ -1,4 +1,4 @@
-PI = False
+PI = True
 
 # Constant
 mask = bytearray([1, 2, 4, 8, 16, 32, 64, 128])
@@ -362,7 +362,11 @@ theTetrisFont = [
 ]
 
 
-class Sprite:
+class GameObject:
+    def __init__(self):
+        self.active = False
+        self.visible = False
+
     def update(self):
         pass
 
@@ -515,8 +519,9 @@ class InputManager:
                     self.pressing_down = False
 
 
-class Piece(Sprite):
+class Piece(GameObject):
     def __init__(self):
+        super().__init__()
         shape_name = random.choice(list(shapes))
         self.x = 3
         self.y = -2
@@ -533,7 +538,6 @@ class Piece(Sprite):
         self.last_soft_drop_time = time.time()
         self.last_run_time = time.time()
         self.run_init_time = time.time()
-        self.visible = False
         self.drop_row_count = 0
 
     def reset(self, piece):
@@ -548,11 +552,12 @@ class Piece(Sprite):
         self.last_run_time = time.time()
         self.run_init_time = time.time()
         self.visible = True
+        self.active = True
         self.drop_row_count = 0
         if not self.is_valid_position(add_x=0, add_y=0):
             board.begin_fill_state()
             self.add_to_board(self.color_index)
-            self.visible = False
+            self.visible = True
         input_manager.pressing_down = False
         # input_manager.pressing_left = False
         # input_manager.pressing_right = False
@@ -668,7 +673,8 @@ class Piece(Sprite):
                 if self.shape[self.rotation][y][x] != blank:
                     board.set_cell(x + self.x, y + self.y, color_index)
         self.visible = False
-        board.hud_show_lines = False
+        self.active = False
+        hud.show_lines = False
         board.score += self.drop_row_count
         if board.state == state_fall:
             board.check_for_complete_line()
@@ -737,7 +743,7 @@ class LineCleaner:
                 board.begin_fall_state()
                 if board.total_line_cleared // 10 > board.level:
                     board.level += 1
-                    board.falling_piece.speed_up()
+                    falling_piece.speed_up()
             else:
                 for y in self.target_list:
                     board.set_cell(4 - self.progress, y, blank)
@@ -758,12 +764,12 @@ class LineCleaner:
                 board.content[x][0] = blank
 
 
-class Board(Sprite):
+class Board(GameObject):
     def __init__(self):
+        super().__init__()
         self.width = 10
         self.height = 20
         self.content = []
-        self.falling_piece = None
         self.next_piece = None
         self.line_cleaner = None
         self.board_filler = None
@@ -803,11 +809,13 @@ class Board(Sprite):
         del self.line_cleaner
         self.line_cleaner = None
         self.state = state_fall
-        self.falling_piece.reset(self.next_piece)
+        falling_piece.reset(self.next_piece)
         self.pick_next_piece()
 
     def begin_wait_state(self):
         self.state = state_wait
+        falling_piece.visible = False
+        hud.visible = False
 
     def begin_fill_state(self):
         self.board_filler.reset()
@@ -821,9 +829,9 @@ class Board(Sprite):
         if len(complete_lines) > 0:
             self.state = state_clear
             self.line_cleaner = LineCleaner(complete_lines)
-            self.hud_show_lines = True
+            hud.show_lines = True
         else:
-            self.falling_piece.reset(self.next_piece)
+            falling_piece.reset(self.next_piece)
             self.pick_next_piece()
 
     def is_line_complete(self, y):
@@ -842,6 +850,22 @@ class Board(Sprite):
         self.state = state_clear
         LineCleaner()
 
+    def update(self):
+        if self.state == state_fall:
+            pass
+        elif self.state == state_clear:
+            self.line_cleaner.update()
+        elif self.state == state_fill:
+            self.board_filler.update()
+        elif self.state == state_wait:
+            if input_manager.pressed_any:
+                falling_piece.__init__()
+                falling_piece.active = True
+                hud.active = True
+                hud.visible = True
+                self.pick_next_piece()
+                self.begin_fall_state()
+
     def draw(self):
         for x in range(self.width):
             for y in range(self.height):
@@ -849,8 +873,9 @@ class Board(Sprite):
                     neopixel_draw(x, y, color_palettes[self.level % len(color_palettes)][self.content[x][y]])
 
 
-class HUD(Sprite):
+class HUD(GameObject):
     def __init__(self):
+        super().__init__()
         self.show_lines = False
 
     @staticmethod
@@ -996,14 +1021,14 @@ pygame.init()
 pygame.joystick.init()
 
 board = Board()
-board.falling_piece = Piece()
+falling_piece = Piece()
 board.board_filler = BoardFiller()
-
 hud = HUD()
-
 input_manager = InputManager()
 
-draw_list = [board, board.falling_piece, hud]
+draw_list = [board, falling_piece, hud]
+board.active = True
+board.visible = True
 
 neopixel_fill((0, 0, 32))
 
@@ -1018,24 +1043,17 @@ while True:
     input_manager.update()
 
     # update
-    if board.state == state_fall:
-        board.falling_piece.update()
-    elif board.state == state_clear:
-        board.line_cleaner.update()
-    elif board.state == state_fill:
-        board.board_filler.update()
-    elif board.state == state_wait:
-        if input_manager.pressed_any:
-            board.falling_piece.__init__()
-            board.pick_next_piece()
-            board.begin_fall_state()
+    for sprite in draw_list:
+        if sprite.active:
+            sprite.update()
 
     if input_manager.pressed_quit:
         terminate()
 
     # Draw
     for sprite in draw_list:
-        sprite.draw()
+        if sprite.visible:
+            sprite.draw()
 
     # Post-draw
     update_screen()
