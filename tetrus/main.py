@@ -829,7 +829,6 @@ class Board(GameObject):
         if len(complete_lines) > 0:
             self.state = state_clear
             self.line_cleaner = LineCleaner(complete_lines)
-            hud.show_lines = True
         else:
             falling_piece.reset(self.next_piece)
             self.pick_next_piece()
@@ -893,6 +892,13 @@ class HUD(GameObject):
                 if number_font[3 * number + x] & mask[y]:
                     luma_draw(offset_x + x, offset_y + y, (255, 0, 0), draw_surface)
 
+    @staticmethod
+    def draw_lines(number, offset_x, offset_y, draw_surface):
+
+        for i in range(0, number % 10):
+            luma_draw(31 - i, 6, (255, 0, 0), draw_surface)
+
+
     def draw(self):
         _score = board.score
         _num_line = board.total_line_cleared
@@ -928,6 +934,8 @@ class HUD(GameObject):
             # draw next piece
             if board.next_piece is not None:
                 self.draw_piece(board.next_piece, 0, 0, application_surface)
+
+            self.draw_lines(board.total_line_cleared, 0, 0, application_surface)
 
 
 
