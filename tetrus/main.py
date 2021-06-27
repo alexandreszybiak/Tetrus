@@ -732,13 +732,10 @@ class LineCleaner:
             self.points_to_give = 300 * (board.level + 1) // 5
         else:
             self.points_to_give = 1200 * (board.level + 1) // 5
-        for y in self.target_list:
-            for x in range(0,10):
-                board.set_cell(x , y, color_indexes["cleared line"])
 
     def update(self):
         if time.time() - self.last_clean_time > self.clean_frequency:
-            if self.progress == 5:
+            if self.progress == 6:
                 self.collapse_gaps()
                 board.begin_fall_state()
                 if board.total_line_cleared // 10 > board.level:
@@ -746,12 +743,18 @@ class LineCleaner:
                     falling_piece.speed_up()
             else:
                 for y in self.target_list:
-                    board.set_cell(4 - self.progress, y, blank)
-                    board.set_cell(5 + self.progress, y, blank)
+                    blank_pos = self.progress - 1
+                    if self.progress > 0:
+                        board.set_cell(4 - blank_pos, y, blank)
+                        board.set_cell(5 + blank_pos, y, blank)
+                    if self.progress < 5:
+                        board.set_cell(4 - self.progress, y, color_indexes["cleared line"])
+                        board.set_cell(5 + self.progress, y, color_indexes["cleared line"])
                 self.last_clean_time = time.time()
                 if self.progress < len(self.target_list):
                     board.total_line_cleared += 1
-                board.score += self.points_to_give
+                if self.progress < 5:
+                    board.score += self.points_to_give
             self.progress += 1
 
     def collapse_gaps(self):
