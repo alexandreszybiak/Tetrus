@@ -1,4 +1,4 @@
-PI = True
+PI = False
 
 # Constant
 mask = bytearray([1, 2, 4, 8, 16, 32, 64, 128])
@@ -735,7 +735,7 @@ class LineCleaner:
 
     def update(self):
         if time.time() - self.last_clean_time > self.clean_frequency:
-            if self.progress == 6:
+            if self.progress == 7:
                 self.collapse_gaps()
                 board.begin_fall_state()
                 if board.total_line_cleared // 10 > board.level:
@@ -744,7 +744,7 @@ class LineCleaner:
             else:
                 for y in self.target_list:
                     blank_pos = self.progress - 1
-                    if self.progress > 0:
+                    if 0 < self.progress < 6:
                         board.set_cell(4 - blank_pos, y, blank)
                         board.set_cell(5 + blank_pos, y, blank)
                     if self.progress < 5:
