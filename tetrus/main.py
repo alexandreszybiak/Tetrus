@@ -1,4 +1,4 @@
-PI = False
+PI = True
 
 # Constant
 mask = bytearray([1, 2, 4, 8, 16, 32, 64, 128])
@@ -6,6 +6,9 @@ mask = bytearray([1, 2, 4, 8, 16, 32, 64, 128])
 # Game Constants
 BOARD_WIDTH = 10
 BOARD_HEIGHT = 20
+
+# Gameplay constants
+PAUSE_AFTER_HARD_DROP_TIME = 0.1
 
 # Gamepad Constants
 JKEY_X = 3
@@ -42,7 +45,7 @@ colors_default = [0x000000,  # background
                   0x555555,  # piece shadow
                   0x989898,  # placed_piece
                   0xff0000,  # death_fill
-                  0xffffff   # cleared piece
+                  0xffffff  # cleared piece
                   ]
 
 colors_meadow = [0x000000,  # background
@@ -56,7 +59,7 @@ colors_meadow = [0x000000,  # background
                  0x272b29,  # piece shadow
                  0x5da93c,  # placed_piece
                  0xff0000,  # death_fill
-                 0xffffff   # cleared piece
+                 0xffffff  # cleared piece
                  ]
 
 colors_bubble = [0x000000,  # background
@@ -70,7 +73,7 @@ colors_bubble = [0x000000,  # background
                  0x53071c,  # piece shadow
                  0xf33087,  # placed_piece
                  0xff0000,  # death_fill
-                 0xffffff   # cleared piece
+                 0xffffff  # cleared piece
                  ]
 
 colors_spring = [0x000000,  # background
@@ -84,7 +87,7 @@ colors_spring = [0x000000,  # background
                  0x0b3248,  # piece shadow
                  0xe65987,  # placed_piece
                  0xff0000,  # death_fill
-                 0xffffff   # cleared piece
+                 0xffffff  # cleared piece
                  ]
 
 colors_autumn = [0x000000,  # background
@@ -98,7 +101,7 @@ colors_autumn = [0x000000,  # background
                  0x322610,  # piece shadow
                  0x883e25,  # placed_piece
                  0xff0000,  # death_fill
-                 0xffffff   # cleared piece
+                 0xffffff  # cleared piece
                  ]
 
 colors_grey = [0x000000,  # background
@@ -112,7 +115,7 @@ colors_grey = [0x000000,  # background
                0x2b2d2c,  # piece shadow
                0x545e57,  # placed_piece
                0xff0000,  # death_fill
-               0xffffff   # cleared piece
+               0xffffff  # cleared piece
                ]
 
 colors_night = [0x000000,  # background
@@ -126,8 +129,8 @@ colors_night = [0x000000,  # background
                 0x1b1730,  # piece shadow
                 0x1f1f72,  # placed_piece
                 0xff0000,  # death_fill
-                 0xffffff   # cleared piece
-                 ]
+                0xffffff  # cleared piece
+                ]
 
 colors_joker = [0x000000,  # background
                 0x42ec0e,  # s
@@ -140,8 +143,8 @@ colors_joker = [0x000000,  # background
                 0x50008d,  # piece shadow
                 0xb500cb,  # placed_piece
                 0xff0000,  # death_fill
-                 0xffffff   # cleared piece
-                 ]
+                0xffffff  # cleared piece
+                ]
 
 colors_lava = [0x000000,  # background
                0xed5e2d,  # s
@@ -154,8 +157,8 @@ colors_lava = [0x000000,  # background
                0x8e0014,  # piece shadow
                0xd8341e,  # placed_piece
                0xff0000,  # death_fill
-                 0xffffff   # cleared piece
-                 ]
+               0xffffff  # cleared piece
+               ]
 
 color_indexes = {"background": 0,
                  "s": 1,
@@ -537,8 +540,11 @@ class Piece(GameObject):
         self.last_fall_time = time.time()
         self.last_soft_drop_time = time.time()
         self.last_run_time = time.time()
+        self.last_hard_drop_time = time.time()
         self.run_init_time = time.time()
         self.drop_row_count = 0
+        self.movable = True
+        self.hard_dropped = False
 
     def reset(self, piece):
         shape_name = piece
@@ -551,9 +557,12 @@ class Piece(GameObject):
         self.last_soft_drop_time = time.time()
         self.last_run_time = time.time()
         self.run_init_time = time.time()
+        self.last_hard_drop_time = time.time()
         self.visible = True
         self.active = True
         self.drop_row_count = 0
+        self.movable = True
+        self.hard_dropped = False
         if not self.is_valid_position(add_x=0, add_y=0):
             board.begin_fill_state()
             self.add_to_board(self.color_index)
@@ -563,42 +572,46 @@ class Piece(GameObject):
         # input_manager.pressing_right = False
 
     def update(self):
-        if input_manager.released_down:
-            self.last_fall_time = time.time()
-            self.drop_row_count = 0
-            if not self.is_valid_position(add_y=1):
+        if self.movable:
+            if input_manager.released_down:
+                self.last_fall_time = time.time()
+                self.drop_row_count = 0
+                if not self.is_valid_position(add_y=1):
+                    self.add_to_board()
+            # move horizontally
+            if input_manager.pressed_left:
+                self.run_init_time = time.time()
+                self.move_horizontal(-1)
+            elif input_manager.pressed_right:
+                self.move_horizontal(1)
+                self.run_init_time = time.time()
+            # rotation
+            if input_manager.pressed_rotate_left:
+                self.rotate(-1)
+            elif input_manager.pressed_rotate_right:
+                self.rotate(1)
+            # soft and hard drops
+            if input_manager.pressed_down:
+                self.move_vertical()
+                self.last_soft_drop_time = time.time()
+            if input_manager.pressed_hard_drop:
+                self.hard_drop()
+            # debug, reset the board
+            if input_manager.pressed_reset_board:
+                board.reset()
+            # fast movements
+            if input_manager.pressing_left:
+                self.run(-1)
+            elif input_manager.pressing_right:
+                self.run(1)
+            if input_manager.pressing_down:
+                self.soft_drop()
+            elif time.time() - self.last_fall_time > self.fall_frequency:
+                self.last_fall_time = time.time()
+                self.move_vertical()
+        elif self.hard_dropped:
+            if time.time() > self.last_hard_drop_time + PAUSE_AFTER_HARD_DROP_TIME:
                 self.add_to_board()
-        # move horizontally
-        if input_manager.pressed_left:
-            self.run_init_time = time.time()
-            self.move_horizontal(-1)
-        elif input_manager.pressed_right:
-            self.move_horizontal(1)
-            self.run_init_time = time.time()
-        # rotation
-        if input_manager.pressed_rotate_left:
-            self.rotate(-1)
-        elif input_manager.pressed_rotate_right:
-            self.rotate(1)
-        # soft and hard drops
-        if input_manager.pressed_down:
-            self.move_vertical()
-            self.last_soft_drop_time = time.time()
-        if input_manager.pressed_hard_drop:
-            self.hard_drop()
-        # debug, reset the board
-        if input_manager.pressed_reset_board:
-            board.reset()
-        # fast movements
-        if input_manager.pressing_left:
-            self.run(-1)
-        elif input_manager.pressing_right:
-            self.run(1)
-        if input_manager.pressing_down:
-            self.soft_drop()
-        elif time.time() - self.last_fall_time > self.fall_frequency:
-            self.last_fall_time = time.time()
-            self.move_vertical()
 
     def rotate(self, direction):
         self.rotation = (self.rotation + direction) % len(self.shape)
@@ -659,7 +672,9 @@ class Piece(GameObject):
         row_count = self.get_drop_position()
         self.y += row_count
         self.drop_row_count = row_count << 1
-        self.add_to_board()
+        self.movable = False
+        self.hard_dropped = True
+        self.last_hard_drop_time = time.time()
 
     def get_drop_position(self):
         for i in range(1, board.height - self.y):
@@ -901,7 +916,6 @@ class HUD(GameObject):
         for i in range(0, number % 10):
             luma_draw(31 - i, 6, (255, 0, 0), draw_surface)
 
-
     def draw(self):
         _score = board.score
         _num_line = board.total_line_cleared
@@ -939,7 +953,6 @@ class HUD(GameObject):
                 self.draw_piece(board.next_piece, 0, 0, application_surface)
 
             self.draw_lines(board.total_line_cleared, 0, 0, application_surface)
-
 
 
 def is_on_board(x, y):
