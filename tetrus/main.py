@@ -390,6 +390,7 @@ class InputManager:
         self.pressing_left = False
         self.pressing_right = False
         self.pressing_down = False
+        self.pressed_debug = False
         self.pressed_left = False
         self.pressed_right = False
         self.pressed_down = False
@@ -429,6 +430,7 @@ class InputManager:
         self.pressed_palette_left = False
         self.pressed_palette_right = False
         self.pressed_quit = False
+        self.pressed_debug = False
         self.pressed_any = False
         self.released_down = False
         pygame.event.pump()
@@ -458,6 +460,8 @@ class InputManager:
                     self.pressed_palette_right = True
                 elif event.key == K_ESCAPE:
                     self.pressed_quit = True
+                elif event.key == K_TAB:
+                    self.pressed_debug = True
             elif event.type == KEYUP:
                 if event.key == K_DOWN:
                     self.pressing_down = False
@@ -480,6 +484,8 @@ class InputManager:
                     self.pressed_palette_left = True
                 elif event.button == 4:
                     self.pressed_palette_right = True
+                elif event.button == JKEY_R:
+                    self.pressed_debug = True
             elif event.type == pygame.JOYAXISMOTION:
                 axis = event.axis
                 val = round(event.value)
@@ -894,6 +900,7 @@ class HUD(GameObject):
     def __init__(self):
         super().__init__()
         self.show_lines = False
+        self.show_fps = False
 
     @staticmethod
     def draw_piece(piece, offset_x, offset_y, draw_surface):
@@ -916,7 +923,31 @@ class HUD(GameObject):
         for i in range(0, number % 10):
             luma_draw(31 - i, 6, (255, 0, 0), draw_surface)
 
+    def update(self):
+        if input_manager.pressed_debug:
+            self.show_fps = not self.show_fps
+
     def draw(self):
+        if self.show_fps:
+            self.draw_fps()
+        else:
+            self.draw_hud()
+
+    def draw_fps(self):
+        _fps = int(clock.get_fps())
+        if PI:
+            with canvas(device) as draw_surface:
+                for i in range(0, 2):
+                    self.draw_score(_fps % 10, 29 - i * 4, 0, draw_surface)
+                    _fps //= 10
+
+                device.show()
+        else:
+            for i in range(0, 2):
+                self.draw_score(_fps % 10, 29 - i * 4, 0, application_surface)
+                _fps //= 10
+
+    def draw_hud(self):
         _score = board.score
         _num_line = board.total_line_cleared
         if PI:
@@ -1056,6 +1087,8 @@ board.visible = True
 
 neopixel_fill((0, 0, 32))
 
+clock = pygame.time.Clock()
+
 while True:
     # Pre-draw
     if not PI:
@@ -1082,4 +1115,4 @@ while True:
     # Post-draw
     update_screen()
 
-    time.sleep(0.03)
+    clock.tick(60)
