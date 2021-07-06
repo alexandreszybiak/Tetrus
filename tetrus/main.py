@@ -928,10 +928,8 @@ class HUD(GameObject):
             self.show_fps = not self.show_fps
 
     def draw(self):
-        if self.show_fps:
+        if input_manager.pressed_debug:
             self.draw_fps()
-        else:
-            self.draw_hud()
 
     def draw_fps(self):
         _fps = int(clock.get_fps())
