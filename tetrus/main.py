@@ -369,6 +369,7 @@ class GameObject:
     def __init__(self):
         self.active = False
         self.visible = False
+        self.current_palette = 0
 
     def update(self):
         pass
@@ -697,6 +698,7 @@ class Piece(GameObject):
         self.active = False
         hud.show_lines = False
         board.score += self.drop_row_count
+        hud.need_redraw = True
         if board.state == state_fall:
             board.check_for_complete_line()
 
@@ -761,6 +763,7 @@ class LineCleaner:
                 board.begin_fall_state()
                 if board.total_line_cleared // 10 > board.level:
                     board.level += 1
+                    board.current_palette = board.level % len(color_palettes)
                     falling_piece.speed_up()
             else:
                 for y in self.target_list:
@@ -774,8 +777,10 @@ class LineCleaner:
                 self.last_clean_time = time.time()
                 if self.progress < len(self.target_list):
                     board.total_line_cleared += 1
+                    hud.need_redraw = True
                 if self.progress < 5:
                     board.score += self.points_to_give
+                    hud.need_redraw = True
             self.progress += 1
 
     def collapse_gaps(self):
@@ -802,6 +807,7 @@ class Board(GameObject):
         self.total_line_cleared = 0
         self.level = 0
         self.hud_show_lines = False
+        self.current_palette = 0
         for i in range(self.width):
             self.content.append([blank] * self.height)
 
@@ -828,6 +834,7 @@ class Board(GameObject):
 
     def pick_next_piece(self):
         self.next_piece = random.choice(list(shapes))
+        hud.need_redraw = True
 
     def begin_fall_state(self):
         del self.line_cleaner
@@ -893,7 +900,7 @@ class Board(GameObject):
         for x in range(self.width):
             for y in range(self.height):
                 if self.content[x][y] != blank:
-                    neopixel_draw(x, y, color_palettes[self.level % len(color_palettes)][self.content[x][y]])
+                    neopixel_draw(x, y, color_palettes[self.current_palette][self.content[x][y]])
 
 
 class HUD(GameObject):
@@ -901,6 +908,7 @@ class HUD(GameObject):
         super().__init__()
         self.show_lines = False
         self.show_fps = False
+        self.need_redraw = True
 
     @staticmethod
     def draw_piece(piece, offset_x, offset_y, draw_surface):
@@ -926,14 +934,20 @@ class HUD(GameObject):
     def update(self):
         if input_manager.pressed_debug:
             self.show_fps = not self.show_fps
+            self.need_redraw = True
 
     def draw(self):
         if input_manager.pressed_debug:
             self.draw_fps()
+        else:
+            self.draw_hud()
 
     def draw_fps(self):
         _fps = int(clock.get_fps())
         if PI:
+            if not self.need_redraw:
+                return
+            self.need_redraw = False
             with canvas(device) as draw_surface:
                 for i in range(0, 2):
                     self.draw_score(_fps % 10, 29 - i * 4, 0, draw_surface)
@@ -949,7 +963,9 @@ class HUD(GameObject):
         _score = board.score
         _num_line = board.total_line_cleared
         if PI:
-            # one point per level
+            if not self.need_redraw:
+                return
+            self.need_redraw = False
             with canvas(device) as draw_surface:
                 # draw score
                 if not self.show_lines:
@@ -1113,4 +1129,4 @@ while True:
     # Post-draw
     update_screen()
 
-    clock.tick(60)
+    clock.tick(30)
