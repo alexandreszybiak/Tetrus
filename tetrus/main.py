@@ -369,7 +369,6 @@ class GameObject:
     def __init__(self):
         self.active = False
         self.visible = False
-        self.current_palette = 0
 
     def update(self):
         pass
@@ -529,6 +528,68 @@ class InputManager:
                     self.pressing_down = False
 
 
+class NeoPixelScreen:
+    def __init__(self):
+        self.current_palette = 0
+
+    def set_cell(self, x, y, color_index):
+        self.draw_cell(x, y, color_palettes[self.current_palette][color_index])
+
+    def clear_cell(self, x, y):
+        self.draw_cell(x, y, BLACK)
+
+    def set_line(self, y, value):
+        for x in range(BOARD_WIDTH):
+            self.set_cell(x, y, value)
+
+    def fill(self, color_index):
+        pixels.fill(color_palettes[self.current_palette][color_index])
+        pixels.show()
+
+    def draw_cell(self, x, y, color):
+        try:
+            if x >= 0 and y >= 0:
+                if x % 2 == 1:
+                    pixels[x * BOARD_HEIGHT + y] = color
+                else:
+                    pixels[x * BOARD_HEIGHT + (BOARD_HEIGHT - 1 - y)] = color
+        except:
+            print(str(x) + ' --- ' + str(y))
+        pixels.show()
+
+
+class NeoPixelScreenSimulator(NeoPixelScreen):
+    def __init__(self):
+        super().__init__()
+        self.content = []
+        for i in range(BOARD_WIDTH):
+            self.content.append([blank] * BOARD_HEIGHT)
+
+    def set_cell(self, x, y, color_index):
+        self.content[x][y] = color_index
+
+    def clear_cell(self, x, y):
+        self.content[x][y] = 0
+
+    def fill(self, color_index):
+        for x in range(BOARD_WIDTH):
+            for y in range(BOARD_HEIGHT):
+                self.content[x][y] = color_index
+
+    @staticmethod
+    def draw_cell(x, y, color):
+        pygame.display.get_window_size()
+        rect_x = pygame.display.get_window_size()[0] / 2 - NEOPIXEL_WIDTH / 2 + x * (NEOPIXEL_SIZE + NEOPIXEL_SPACING)
+        rect_y = pygame.display.get_window_size()[1] / 2 - NEOPIXEL_HEIGHT / 2 + y * (NEOPIXEL_SIZE + NEOPIXEL_SPACING)
+        pygame.draw.rect(application_surface, color, (rect_x, rect_y, NEOPIXEL_SIZE, NEOPIXEL_SIZE))
+
+    def draw(self):
+        for x in range(BOARD_WIDTH):
+            for y in range(BOARD_HEIGHT):
+                if self.content[x][y] != blank:
+                    self.draw_cell(x, y, color_palettes[self.current_palette][self.content[x][y]])
+
+
 class Piece(GameObject):
     def __init__(self):
         super().__init__()
@@ -570,6 +631,8 @@ class Piece(GameObject):
         self.drop_row_count = 0
         self.movable = True
         self.hard_dropped = False
+        self.draw_piece(color_indexes["piece_shadow"], add_y=self.get_drop_position())
+        self.draw_piece(self.color_index)
         if not self.is_valid_position(add_x=0, add_y=0):
             board.begin_fill_state()
             self.add_to_board(self.color_index)
@@ -621,9 +684,14 @@ class Piece(GameObject):
                 self.add_to_board()
 
     def rotate(self, direction):
+        self.clear_piece()
+        self.clear_piece(add_y=self.get_drop_position())
         self.rotation = (self.rotation + direction) % len(self.shape)
         if not self.is_valid_position():
             self.rotation = (self.rotation - direction) % len(self.shape)
+            self.draw_piece(self.color_index)
+        self.draw_piece(color_indexes["piece_shadow"], add_y=self.get_drop_position())
+        self.draw_piece(self.color_index)
 
     def speed_up(self):
         if self.fall_frequency > 0.216:
@@ -635,12 +703,18 @@ class Piece(GameObject):
         if not self.is_valid_position(add_x=0, add_y=1):
             self.add_to_board()
         else:
+            self.clear_piece()
             self.y += 1
+            self.draw_piece(self.color_index)
 
     def move_horizontal(self, x):
         if self.is_valid_position(add_x=x):
+            self.clear_piece(add_y=self.get_drop_position())
+            self.clear_piece()
             self.x += x
             self.last_run_time = time.time()
+            self.draw_piece(color_indexes["piece_shadow"], add_y=self.get_drop_position())
+            self.draw_piece(self.color_index)
         else:
             self.run_init_time = 0
             self.last_run_time = 0
@@ -657,12 +731,6 @@ class Piece(GameObject):
             if not self.is_valid_position(add_y=1):
                 self.last_soft_drop_time = time.time() + (self.press_down_frequency * 5)
 
-    def draw(self):
-        if not self.visible:
-            return
-        self.draw_piece(color_indexes["piece_shadow"], add_y=self.get_drop_position())
-        self.draw_piece(self.color_index)
-
     def draw_piece(self, color, add_x=0, add_y=0):
         for x in range(self.template_width):
             for y in range(self.template_height):
@@ -670,8 +738,16 @@ class Piece(GameObject):
                     continue
                 if y + self.y + add_y < 0:
                     continue
-                neopixel_draw(x + self.x + add_x, y + self.y + add_y,
-                              color_palettes[board.level % len(color_palettes)][color])
+                neopixel_screen.set_cell(x + self.x + add_x, y + self.y + add_y, color)
+
+    def clear_piece(self, add_x=0, add_y=0):
+        for x in range(self.template_width):
+            for y in range(self.template_height):
+                if self.shape[self.rotation][y][x] == blank:
+                    continue
+                if y + self.y + add_y < 0:
+                    continue
+                neopixel_screen.clear_cell(x + self.x + add_x, y + self.y + add_y)
 
     def hard_drop(self):
         if not self.is_valid_position(add_y=1):
@@ -694,6 +770,7 @@ class Piece(GameObject):
             for y in range(self.template_height):
                 if self.shape[self.rotation][y][x] != blank:
                     board.set_cell(x + self.x, y + self.y, color_index)
+                    neopixel_screen.set_cell(x + self.x, y + self.y, color_index)
         self.visible = False
         self.active = False
         hud.show_lines = False
@@ -735,7 +812,7 @@ class BoardFiller:
             board.begin_wait_state()
         elif self.line_to_fill > 0 and time.time() - self.last_fill_time > self.fill_frequency:
             self.line_to_fill -= 1
-            board.set_line(self.line_to_fill, color_indexes["death_fill"])
+            neopixel_screen.set_line(self.line_to_fill, color_indexes["death_fill"])
             self.end_fill_time = time.time()
             self.last_fill_time = time.time()
 
@@ -763,7 +840,7 @@ class LineCleaner:
                 board.begin_fall_state()
                 if board.total_line_cleared // 10 > board.level:
                     board.level += 1
-                    board.current_palette = board.level % len(color_palettes)
+                    neopixel_screen.current_palette = board.level % len(color_palettes)
                     falling_piece.speed_up()
             else:
                 for y in self.target_list:
@@ -771,9 +848,13 @@ class LineCleaner:
                     if 0 < self.progress < 6:
                         board.set_cell(4 - blank_pos, y, blank)
                         board.set_cell(5 + blank_pos, y, blank)
+                        neopixel_screen.set_cell(4 - blank_pos, y, 0)
+                        neopixel_screen.set_cell(5 + blank_pos, y, 0)
                     if self.progress < 5:
                         board.set_cell(4 - self.progress, y, color_indexes["cleared line"])
                         board.set_cell(5 + self.progress, y, color_indexes["cleared line"])
+                        neopixel_screen.set_cell(4 - self.progress, y, color_indexes["cleared line"])
+                        neopixel_screen.set_cell(5 + self.progress, y, color_indexes["cleared line"])
                 self.last_clean_time = time.time()
                 if self.progress < len(self.target_list):
                     board.total_line_cleared += 1
@@ -788,9 +869,15 @@ class LineCleaner:
         for y in self.target_list:
             for shift_line in range(y, 0, -1):
                 for x in range(board.width):
-                    board.content[x][shift_line] = board.content[x][shift_line - 1]
+                    top_color_index = board.content[x][shift_line - 1]
+                    board.content[x][shift_line] = top_color_index
+                    if top_color_index == blank:
+                        neopixel_screen.set_cell(x, shift_line, 0)
+                    else:
+                        neopixel_screen.set_cell(x, shift_line, top_color_index)
             for x in range(board.width):
                 board.content[x][0] = blank
+                neopixel_screen.set_cell(x, 0, 0)
 
 
 class Board(GameObject):
@@ -807,7 +894,6 @@ class Board(GameObject):
         self.total_line_cleared = 0
         self.level = 0
         self.hud_show_lines = False
-        self.current_palette = 0
         for i in range(self.width):
             self.content.append([blank] * self.height)
 
@@ -825,7 +911,7 @@ class Board(GameObject):
 
     def set_line(self, y, value):
         for x in range(board.width):
-            self.content[x][y] = value
+            self.set_cell(x, y, value)
 
     def get_cell(self, x, y):
         if y < 0:
@@ -895,12 +981,6 @@ class Board(GameObject):
                 hud.visible = True
                 self.pick_next_piece()
                 self.begin_fall_state()
-
-    def draw(self):
-        for x in range(self.width):
-            for y in range(self.height):
-                if self.content[x][y] != blank:
-                    neopixel_draw(x, y, color_palettes[self.current_palette][self.content[x][y]])
 
 
 class HUD(GameObject):
@@ -1004,32 +1084,6 @@ def is_on_board(x, y):
     return 0 <= x < board.width and y < board.height
 
 
-def neopixel_fill(color):
-    if PI:
-        pixels.fill(color)
-    else:
-        for y in range(BOARD_HEIGHT):
-            for x in range(BOARD_WIDTH):
-                neopixel_draw(x, y, color)
-
-
-def neopixel_draw(x, y, color):
-    if PI:
-        try:
-            if x >= 0 and y >= 0:
-                if x % 2 == 1:
-                    pixels[x * BOARD_HEIGHT + y] = color
-                else:
-                    pixels[x * BOARD_HEIGHT + (BOARD_HEIGHT - 1 - y)] = color
-        except:
-            print(str(x) + ' --- ' + str(y))
-    else:
-        pygame.display.get_window_size()
-        rect_x = pygame.display.get_window_size()[0] / 2 - NEOPIXEL_WIDTH / 2 + x * (NEOPIXEL_SIZE + NEOPIXEL_SPACING)
-        rect_y = pygame.display.get_window_size()[1] / 2 - NEOPIXEL_HEIGHT / 2 + y * (NEOPIXEL_SIZE + NEOPIXEL_SPACING)
-        pygame.draw.rect(application_surface, color, (rect_x, rect_y, NEOPIXEL_SIZE, NEOPIXEL_SIZE))
-
-
 def luma_fill(color):
     if PI:
         pass
@@ -1049,16 +1103,8 @@ def luma_draw(x, y, color, draw_surface):
         pygame.draw.rect(draw_surface, color, (rect_x, rect_y, LUMA_SIZE, LUMA_SIZE))
 
 
-def update_screen():
-    if PI:
-        pixels.show()
-    else:
-        pygame.display.update()
-
-
 def terminate():
-    neopixel_fill((0, 0, 0))
-    update_screen()
+    neopixel_screen.fill(0)
     pygame.quit()
     exit()
 
@@ -1095,28 +1141,37 @@ board.board_filler = BoardFiller()
 hud = HUD()
 input_manager = InputManager()
 
-draw_list = [board, falling_piece, hud]
+draw_list = [hud]
+update_list = [board, falling_piece, hud]
 board.active = True
 board.visible = True
 
-neopixel_fill((0, 0, 32))
-
 clock = pygame.time.Clock()
+
+if PI:
+    neopixel_screen = NeoPixelScreen()
+else:
+    neopixel_screen = NeoPixelScreenSimulator()
+
+neopixel_screen.fill(0)
+
+if not PI:
+    application_surface.fill(SIMULATOR_BACKGROUND)
+    luma_fill(LUMA_COLOR_OFF)
 
 while True:
     # Pre-draw
     if not PI:
-        application_surface.fill(SIMULATOR_BACKGROUND)
         luma_fill(LUMA_COLOR_OFF)
-    neopixel_fill(NEOPIXEL_SIMULATOR_COLOR_OFF)
+    # neopixel_fill(NEOPIXEL_SIMULATOR_COLOR_OFF)
 
     # Pre-update
     input_manager.update()
 
     # update
-    for sprite in draw_list:
-        if sprite.active:
-            sprite.update()
+    for game_object in update_list:
+        if game_object.active:
+            game_object.update()
 
     if input_manager.pressed_quit:
         terminate()
@@ -1127,6 +1182,8 @@ while True:
             sprite.draw()
 
     # Post-draw
-    update_screen()
+    if not PI:
+        neopixel_screen.draw()
+        pygame.display.update()
 
     clock.tick(30)
