@@ -538,9 +538,9 @@ class NeoPixelScreen:
     def clear_cell(self, x, y):
         self.draw_cell(x, y, BLACK)
 
-    def set_line(self, y, value):
+    def set_line(self, y, color_index):
         for x in range(BOARD_WIDTH):
-            self.set_cell(x, y, value)
+            self.set_cell(x, y, color_index)
 
     def fill(self, color_index):
         pixels.fill(color_palettes[self.current_palette][color_index])
@@ -563,10 +563,10 @@ class NeoPixelScreenSimulator(NeoPixelScreen):
         super().__init__()
         self.content = []
         for i in range(BOARD_WIDTH):
-            self.content.append([blank] * BOARD_HEIGHT)
+            self.content.append([0] * BOARD_HEIGHT)
 
     def set_cell(self, x, y, color_index):
-        self.content[x][y] = color_index
+        self.content[x][y] = color_palettes[self.current_palette][color_index]
 
     def clear_cell(self, x, y):
         self.content[x][y] = 0
@@ -574,7 +574,7 @@ class NeoPixelScreenSimulator(NeoPixelScreen):
     def fill(self, color_index):
         for x in range(BOARD_WIDTH):
             for y in range(BOARD_HEIGHT):
-                self.content[x][y] = color_index
+                self.content[x][y] = color_palettes[self.current_palette][color_index]
 
     @staticmethod
     def draw_cell(x, y, color):
@@ -586,8 +586,7 @@ class NeoPixelScreenSimulator(NeoPixelScreen):
     def draw(self):
         for x in range(BOARD_WIDTH):
             for y in range(BOARD_HEIGHT):
-                if self.content[x][y] != blank:
-                    self.draw_cell(x, y, color_palettes[self.current_palette][self.content[x][y]])
+                self.draw_cell(x, y, self.content[x][y])
 
 
 class Piece(GameObject):
@@ -752,12 +751,14 @@ class Piece(GameObject):
     def hard_drop(self):
         if not self.is_valid_position(add_y=1):
             return
+        self.clear_piece()
         row_count = self.get_drop_position()
         self.y += row_count
         self.drop_row_count = row_count << 1
         self.movable = False
         self.hard_dropped = True
         self.last_hard_drop_time = time.time()
+        self.draw_piece(self.color_index)
 
     def get_drop_position(self):
         for i in range(1, board.height - self.y):
@@ -810,6 +811,8 @@ class BoardFiller:
         if self.line_to_fill == 0 and time.time() - self.end_fill_time > self.pause_before_reset_duration:
             board.reset()
             board.begin_wait_state()
+            neopixel_screen.fill(0)
+            neopixel_screen.current_palette = 0
         elif self.line_to_fill > 0 and time.time() - self.last_fill_time > self.fill_frequency:
             self.line_to_fill -= 1
             neopixel_screen.set_line(self.line_to_fill, color_indexes["death_fill"])
@@ -837,11 +840,12 @@ class LineCleaner:
         if time.time() - self.last_clean_time > self.clean_frequency:
             if self.progress == 7:
                 self.collapse_gaps()
-                board.begin_fall_state()
                 if board.total_line_cleared // 10 > board.level:
                     board.level += 1
                     neopixel_screen.current_palette = board.level % len(color_palettes)
+                    board.draw_stack()
                     falling_piece.speed_up()
+                board.begin_fall_state()
             else:
                 for y in self.target_list:
                     blank_pos = self.progress - 1
@@ -981,6 +985,13 @@ class Board(GameObject):
                 hud.visible = True
                 self.pick_next_piece()
                 self.begin_fall_state()
+
+    def draw_stack(self):
+        for x in range(BOARD_WIDTH):
+            for y in range(BOARD_HEIGHT):
+                if self.content[x][y] == blank:
+                    continue
+                neopixel_screen.set_cell(x, y, self.content[x][y])
 
 
 class HUD(GameObject):
