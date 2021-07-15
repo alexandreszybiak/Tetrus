@@ -531,6 +531,7 @@ class InputManager:
 class NeoPixelScreen:
     def __init__(self):
         self.current_palette = 0
+        self.need_refresh = True
 
     def set_cell(self, x, y, color_index):
         self.draw_cell(x, y, color_palettes[self.current_palette][color_index])
@@ -544,7 +545,7 @@ class NeoPixelScreen:
 
     def fill(self, color_index):
         pixels.fill(color_palettes[self.current_palette][color_index])
-        pixels.show()
+        self.need_refresh = True
 
     def draw_cell(self, x, y, color):
         try:
@@ -555,7 +556,12 @@ class NeoPixelScreen:
                     pixels[x * BOARD_HEIGHT + (BOARD_HEIGHT - 1 - y)] = color
         except:
             print(str(x) + ' --- ' + str(y))
-        pixels.show()
+        self.need_refresh = True
+
+    def refresh(self):
+        if self.need_refresh:
+            pixels.show()
+        self.need_refresh = False
 
 
 class NeoPixelScreenSimulator(NeoPixelScreen):
@@ -583,10 +589,11 @@ class NeoPixelScreenSimulator(NeoPixelScreen):
         rect_y = pygame.display.get_window_size()[1] / 2 - NEOPIXEL_HEIGHT / 2 + y * (NEOPIXEL_SIZE + NEOPIXEL_SPACING)
         pygame.draw.rect(application_surface, color, (rect_x, rect_y, NEOPIXEL_SIZE, NEOPIXEL_SIZE))
 
-    def draw(self):
+    def refresh(self):
         for x in range(BOARD_WIDTH):
             for y in range(BOARD_HEIGHT):
                 self.draw_cell(x, y, self.content[x][y])
+        pygame.display.update()
 
 
 class Piece(GameObject):
@@ -1193,8 +1200,6 @@ while True:
             sprite.draw()
 
     # Post-draw
-    if not PI:
-        neopixel_screen.draw()
-        pygame.display.update()
+    neopixel_screen.refresh()
 
     clock.tick(30)
