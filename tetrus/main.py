@@ -1,4 +1,4 @@
-PI = True
+PI = False
 
 # Constant
 mask = bytearray([1, 2, 4, 8, 16, 32, 64, 128])
@@ -599,7 +599,7 @@ class NeoPixelScreenSimulator(NeoPixelScreen):
 class Piece(GameObject):
     def __init__(self):
         super().__init__()
-        shape_name = random.choice(list(shapes))
+        shape_name = piece_dealer.deal_piece()
         self.x = 3
         self.y = -2
         self.rotation = 0
@@ -930,7 +930,7 @@ class Board(GameObject):
         return self.content[x][y]
 
     def pick_next_piece(self):
-        self.next_piece = random.choice(list(shapes))
+        self.next_piece = piece_dealer.deal_piece()
         hud.need_redraw = True
 
     def begin_fall_state(self):
@@ -1098,6 +1098,31 @@ class HUD(GameObject):
             self.draw_lines(board.total_line_cleared, 0, 0, application_surface)
 
 
+class PieceDealer:
+    def __init__(self):
+        pass
+
+    def deal_piece(self):
+        return random.choice(list(shapes))
+
+
+class PieceDealerBag(PieceDealer):
+    def __init__(self):
+        self.bag = []
+        self.fill_bag()
+
+    def fill_bag(self):
+        self.bag = list(shapes.keys())
+        random.shuffle(self.bag)
+        print(self.bag)
+
+    def deal_piece(self):
+        dealt_piece = self.bag.pop()
+        if len(self.bag) == 0:
+            self.fill_bag()
+        return dealt_piece
+
+
 def is_on_board(x, y):
     return 0 <= x < board.width and y < board.height
 
@@ -1154,6 +1179,7 @@ pygame.init()
 pygame.joystick.init()
 
 board = Board()
+piece_dealer = PieceDealer()
 falling_piece = Piece()
 board.board_filler = BoardFiller()
 hud = HUD()
@@ -1163,6 +1189,8 @@ draw_list = [hud]
 update_list = [board, falling_piece, hud]
 board.active = True
 board.visible = True
+
+
 
 clock = pygame.time.Clock()
 
