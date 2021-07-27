@@ -1123,6 +1123,31 @@ class PieceDealerBag(PieceDealer):
         return dealt_piece
 
 
+class PieceDealerBagAlex(PieceDealer):
+    def __init__(self):
+        self.bag = []
+        self.fill_bag()
+        self.piece_history = {'s': 0,
+                              'z': 0,
+                              'j': 0,
+                              'l': 0,
+                              'i': 0,
+                              'o': 0,
+                              't': 0}
+
+    def fill_bag(self):
+        self.bag = list(shapes.keys())
+        random.shuffle(self.bag)
+
+    def deal_piece(self):
+        dealt_piece = self.bag.pop()
+        self.piece_history[dealt_piece] = self.piece_history[dealt_piece] + 1
+        print(self.piece_history)
+        if len(self.bag) == 0:
+            self.fill_bag()
+        return dealt_piece
+
+
 def is_on_board(x, y):
     return 0 <= x < board.width and y < board.height
 
@@ -1179,7 +1204,7 @@ pygame.init()
 pygame.joystick.init()
 
 board = Board()
-piece_dealer = PieceDealer()
+piece_dealer = PieceDealerBagAlex()
 falling_piece = Piece()
 board.board_filler = BoardFiller()
 hud = HUD()
