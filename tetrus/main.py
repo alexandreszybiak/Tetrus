@@ -1,4 +1,4 @@
-PI = False
+PI = True
 
 # Constant
 mask = bytearray([1, 2, 4, 8, 16, 32, 64, 128])
@@ -1148,6 +1148,7 @@ def luma_draw(x, y, color, draw_surface):
 
 def terminate():
     neopixel_screen.fill(0)
+    neopixel_screen.refresh()
     pygame.quit()
     exit()
 
