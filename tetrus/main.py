@@ -1,4 +1,4 @@
-PI = False
+PI = True
 
 # Constant
 mask = bytearray([1, 2, 4, 8, 16, 32, 64, 128])
@@ -996,6 +996,8 @@ class Board(GameObject):
         elif self.state == state_wait:
             if input_manager.connected_joystick:
                 neopixel_screen.set_cell(3, 1, 9)
+            elif input_manager.disconnected_joystick:
+                neopixel_screen.set_cell(3, 1, 0)
             if input_manager.pressed_any:
                 falling_piece.__init__()
                 falling_piece.active = True
