@@ -1,4 +1,4 @@
-PI = True
+PI = False
 
 # Constant
 mask = bytearray([1, 2, 4, 8, 16, 32, 64, 128])
@@ -403,19 +403,28 @@ class InputManager:
         self.released_down = False
         self.pressed_palette_left = False
         self.pressed_palette_right = False
+        self.connected_joystick = False
+        self.disconnected_joystick = False
+        self.joystick_is_connected = False
         self.joystick = None
         self.update_controller_status()
 
     def update_controller_status(self):
+        self.connected_joystick = False
+        self.disconnected_joystick = False
         if not pygame.joystick.get_init():
             pygame.joystick.init()
         if pygame.joystick.get_count() > 0:
             if self.joystick is None:
                 self.joystick = pygame.joystick.Joystick(0)
                 self.joystick.init()
+                self.connected_joystick = True
+                self.joystick_is_connected = True
         else:
             if self.joystick is not None:
                 self.joystick.quit()
+                self.disconnected_joystick = True
+                self.joystick_is_connected = False
             self.joystick = None
 
     def update(self):
@@ -985,6 +994,8 @@ class Board(GameObject):
         elif self.state == state_fill:
             self.board_filler.update()
         elif self.state == state_wait:
+            if input_manager.connected_joystick:
+                neopixel_screen.set_cell(3, 1, 9)
             if input_manager.pressed_any:
                 falling_piece.__init__()
                 falling_piece.active = True
@@ -1148,7 +1159,7 @@ class PieceDealerBagAlex(PieceDealer):
     def deal_piece(self):
         dealt_piece = self.bag.pop()
         self.piece_history[dealt_piece] = self.piece_history[dealt_piece] + 1
-        #print(self.piece_history)
+        # print(self.piece_history)
         if len(self.bag) == 0:
             self.fill_bag()
         return dealt_piece
@@ -1233,8 +1244,6 @@ update_list = [board, falling_piece, hud]
 board.active = True
 board.visible = True
 
-
-
 clock = pygame.time.Clock()
 
 if PI:
@@ -1243,6 +1252,9 @@ else:
     neopixel_screen = NeoPixelScreenSimulator()
 
 neopixel_screen.fill(0)
+neopixel_screen.set_cell(1, 1, 1)
+if input_manager.joystick_is_connected:
+    neopixel_screen.set_cell(3, 1, 9)
 
 if not PI:
     application_surface.fill(SIMULATOR_BACKGROUND)
