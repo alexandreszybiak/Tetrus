@@ -999,6 +999,7 @@ class Board(GameObject):
             elif input_manager.disconnected_joystick:
                 neopixel_screen.set_cell(3, 1, 0)
             if input_manager.pressed_any:
+                neopixel_screen.fill(0)
                 falling_piece.__init__()
                 falling_piece.active = True
                 hud.active = True
