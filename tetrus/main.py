@@ -56,7 +56,7 @@ colors_meadow = [0x000000,  # background
                  0x5096ff,  # i
                  0x5096ff,  # o
                  0x5096ff,  # t
-                 0x272b29,  # piece shadow
+                 0x040404,  # piece shadow
                  0x5da93c,  # placed_piece
                  0xff0000,  # death_fill
                  0xffffff  # cleared piece
@@ -70,7 +70,7 @@ colors_bubble = [0x000000,  # background
                  0xfff840,  # i
                  0xfff840,  # o
                  0xfff840,  # t
-                 0x53071c,  # piece shadow
+                 0x040404,  # piece shadow
                  0xf33087,  # placed_piece
                  0xff0000,  # death_fill
                  0xffffff  # cleared piece
@@ -84,7 +84,7 @@ colors_spring = [0x000000,  # background
                  0x91ea1f,  # i
                  0x91ea1f,  # o
                  0x91ea1f,  # t
-                 0x0b3248,  # piece shadow
+                 0x040404,  # piece shadow
                  0xe65987,  # placed_piece
                  0xff0000,  # death_fill
                  0xffffff  # cleared piece
@@ -98,7 +98,7 @@ colors_autumn = [0x000000,  # background
                  0x5f991c,  # i
                  0x5f991c,  # o
                  0x5f991c,  # t
-                 0x322610,  # piece shadow
+                 0x040404,  # piece shadow
                  0x883e25,  # placed_piece
                  0xff0000,  # death_fill
                  0xffffff  # cleared piece
@@ -112,7 +112,7 @@ colors_grey = [0x000000,  # background
                0x6d7e74,  # i
                0x6d7e74,  # o
                0x6d7e74,  # t
-               0x2b2d2c,  # piece shadow
+               0x040404,  # piece shadow
                0x545e57,  # placed_piece
                0xff0000,  # death_fill
                0xffffff  # cleared piece
@@ -126,7 +126,7 @@ colors_night = [0x000000,  # background
                 0x3131d4,  # i
                 0x3131d4,  # o
                 0x3131d4,  # t
-                0x1b1730,  # piece shadow
+                0x040404,  # piece shadow
                 0x1f1f72,  # placed_piece
                 0xff0000,  # death_fill
                 0xffffff  # cleared piece
@@ -140,7 +140,7 @@ colors_joker = [0x000000,  # background
                 0x42ec0e,  # i
                 0x42ec0e,  # o
                 0x42ec0e,  # t
-                0x50008d,  # piece shadow
+                0x040404,  # piece shadow
                 0xb500cb,  # placed_piece
                 0xff0000,  # death_fill
                 0xffffff  # cleared piece
@@ -154,7 +154,7 @@ colors_lava = [0x000000,  # background
                0xed5e2d,  # i
                0xed5e2d,  # o
                0xed5e2d,  # t
-               0x8e0014,  # piece shadow
+               0x040404,  # piece shadow
                0xd8341e,  # placed_piece
                0xff0000,  # death_fill
                0xffffff  # cleared piece
@@ -617,7 +617,7 @@ class Piece(GameObject):
         self.template_height = 5
         self.color_index = color_indexes[shape_name]
         self.fall_frequency = 0.8
-        self.press_down_frequency = 0.025
+        self.press_down_frequency = 0.035
         self.run_charge_time = 0.15
         self.run_frequency = 0.04
         self.last_fall_time = time.time()
