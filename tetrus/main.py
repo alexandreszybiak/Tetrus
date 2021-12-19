@@ -385,6 +385,20 @@ class StateMachine:
         self.state = new_state
 
 
+class SceneManager:
+    def __init__(self):
+        self.current_scene = None
+
+    def change_scene(self, new_scene):
+        if self.current_scene is not None:
+            self.current_scene.exit()
+        self.current_scene = new_scene
+        new_scene.enter()
+
+    def update(self):
+        self.current_scene.update()
+
+
 class InputManager:
     def __init__(self):
         self.pressing_left = False
@@ -400,6 +414,7 @@ class InputManager:
         self.pressed_reset_board = False
         self.pressed_quit = False
         self.pressed_any = False
+        self.pressed_pause = False
         self.released_down = False
         self.pressed_palette_left = False
         self.pressed_palette_right = False
@@ -440,6 +455,7 @@ class InputManager:
         self.pressed_palette_right = False
         self.pressed_quit = False
         self.pressed_debug = False
+        self.pressed_pause = False
         self.pressed_any = False
         self.released_down = False
         pygame.event.pump()
@@ -467,6 +483,8 @@ class InputManager:
                     self.pressed_palette_left = True
                 elif event.key == K_v:
                     self.pressed_palette_right = True
+                elif event.key == K_p:
+                    self.pressed_pause = True
                 elif event.key == K_ESCAPE:
                     self.pressed_quit = True
                 elif event.key == K_TAB:
@@ -495,6 +513,8 @@ class InputManager:
                     self.pressed_palette_right = True
                 elif event.button == JKEY_R:
                     self.pressed_debug = True
+                elif event.button == JKEY_START:
+                    self.pressed_pause = True
             elif event.type == pygame.JOYAXISMOTION:
                 axis = event.axis
                 val = round(event.value)
@@ -649,7 +669,7 @@ class Piece(GameObject):
         self.draw_piece(color_indexes["piece_shadow"], add_y=self.get_drop_position())
         self.draw_piece(self.color_index)
         if not self.is_valid_position(add_x=0, add_y=0):
-            board.begin_fill_state()
+            game_scene.begin_fill_state()
             self.add_to_board(self.color_index)
             self.visible = True
         input_manager.pressing_down = False
@@ -657,6 +677,8 @@ class Piece(GameObject):
         # input_manager.pressing_right = False
 
     def update(self):
+        if not self.active:
+            return
         if self.movable:
             if input_manager.released_down:
                 self.last_fall_time = time.time()
@@ -791,10 +813,10 @@ class Piece(GameObject):
         self.visible = False
         self.active = False
         hud.show_lines = False
-        board.score += self.drop_row_count
+        game_scene.score += self.drop_row_count
         hud.need_redraw = True
-        if board.state == state_fall:
-            board.check_for_complete_line()
+        if game_scene.state == state_fall:
+            game_scene.check_for_complete_line()
 
     def is_valid_position(self, add_x=0, add_y=0):
         for x in range(self.template_width):
@@ -825,10 +847,7 @@ class BoardFiller:
 
     def update(self):
         if self.line_to_fill == 0 and time.time() - self.end_fill_time > self.pause_before_reset_duration:
-            board.reset()
-            board.begin_wait_state()
-            neopixel_screen.fill(0)
-            neopixel_screen.current_palette = 0
+            scene_manager.change_scene(menu_scene)
         elif self.line_to_fill > 0 and time.time() - self.last_fill_time > self.fill_frequency:
             self.line_to_fill -= 1
             neopixel_screen.set_line(self.line_to_fill, color_indexes["death_fill"])
@@ -837,31 +856,37 @@ class BoardFiller:
 
 
 class LineCleaner:
-    def __init__(self, target_list):
-        self.target_list = target_list
+    def __init__(self):
+        self.target_list = None
         self.progress = 0
         self.last_clean_time = 0
         self.clean_frequency = 0.05
         self.points_to_give = 0
+
+    def enter(self, target_list):
+        self.target_list = target_list
+        self.progress = 0
+        self.last_clean_time = 0
+        self.points_to_give = 0
         if len(self.target_list) == 1:
-            self.points_to_give = 40 * (board.level + 1) // 5
+            self.points_to_give = 40 * (game_scene.level + 1) // 5
         elif len(self.target_list) == 2:
-            self.points_to_give = 100 * (board.level + 1) // 5
+            self.points_to_give = 100 * (game_scene.level + 1) // 5
         elif len(self.target_list) == 3:
-            self.points_to_give = 300 * (board.level + 1) // 5
+            self.points_to_give = 300 * (game_scene.level + 1) // 5
         else:
-            self.points_to_give = 1200 * (board.level + 1) // 5
+            self.points_to_give = 1200 * (game_scene.level + 1) // 5
 
     def update(self):
         if time.time() - self.last_clean_time > self.clean_frequency:
             if self.progress == 7:
                 self.collapse_gaps()
-                if board.total_line_cleared // 10 > board.level:
-                    board.level += 1
-                    neopixel_screen.current_palette = board.level % len(color_palettes)
+                if game_scene.total_line_cleared // 10 > game_scene.level:
+                    game_scene.level += 1
+                    neopixel_screen.current_palette = game_scene.level % len(color_palettes)
                     board.draw_stack()
                     falling_piece.speed_up()
-                board.begin_fall_state()
+                game_scene.begin_fall_state()
             else:
                 for y in self.target_list:
                     blank_pos = self.progress - 1
@@ -877,10 +902,10 @@ class LineCleaner:
                         neopixel_screen.set_cell(5 + self.progress, y, color_indexes["cleared line"])
                 self.last_clean_time = time.time()
                 if self.progress < len(self.target_list):
-                    board.total_line_cleared += 1
+                    game_scene.total_line_cleared += 1
                     hud.need_redraw = True
                 if self.progress < 5:
-                    board.score += self.points_to_give
+                    game_scene.score += self.points_to_give
                     hud.need_redraw = True
             self.progress += 1
 
@@ -906,22 +931,10 @@ class Board(GameObject):
         self.width = 10
         self.height = 20
         self.content = []
-        self.next_piece = None
-        self.line_cleaner = None
-        self.board_filler = None
-        self.state = state_wait
-        self.score = 0
-        self.total_line_cleared = 0
-        self.level = 0
-        self.hud_show_lines = False
         for i in range(self.width):
             self.content.append([blank] * self.height)
 
     def reset(self):
-        self.score = 0
-        self.total_line_cleared = 0
-        self.level = 0
-        self.next_piece = None
         for x in range(self.width):
             for y in range(self.height):
                 self.set_cell(x, y, blank)
@@ -938,38 +951,6 @@ class Board(GameObject):
             return blank
         return self.content[x][y]
 
-    def pick_next_piece(self):
-        self.next_piece = piece_dealer.deal_piece()
-        hud.need_redraw = True
-
-    def begin_fall_state(self):
-        del self.line_cleaner
-        self.line_cleaner = None
-        self.state = state_fall
-        falling_piece.reset(self.next_piece)
-        self.pick_next_piece()
-
-    def begin_wait_state(self):
-        self.state = state_wait
-        falling_piece.visible = False
-        hud.visible = False
-
-    def begin_fill_state(self):
-        self.board_filler.reset()
-        self.state = state_fill
-
-    def check_for_complete_line(self):
-        complete_lines = []
-        for y in range(self.height):
-            if self.is_line_complete(y):
-                complete_lines.append(y)
-        if len(complete_lines) > 0:
-            self.state = state_clear
-            self.line_cleaner = LineCleaner(complete_lines)
-        else:
-            falling_piece.reset(self.next_piece)
-            self.pick_next_piece()
-
     def is_line_complete(self, y):
         for x in range(self.width):
             if self.content[x][y] == blank:
@@ -981,31 +962,6 @@ class Board(GameObject):
             if self.content[x][y] != blank:
                 return False
         return True
-
-    def transition_to_clear_state(self):
-        self.state = state_clear
-        LineCleaner()
-
-    def update(self):
-        if self.state == state_fall:
-            pass
-        elif self.state == state_clear:
-            self.line_cleaner.update()
-        elif self.state == state_fill:
-            self.board_filler.update()
-        elif self.state == state_wait:
-            if input_manager.connected_joystick:
-                neopixel_screen.set_cell(3, 1, 9)
-            elif input_manager.disconnected_joystick:
-                neopixel_screen.set_cell(3, 1, 0)
-            if input_manager.pressed_any:
-                neopixel_screen.fill(0)
-                falling_piece.__init__()
-                falling_piece.active = True
-                hud.active = True
-                hud.visible = True
-                self.pick_next_piece()
-                self.begin_fall_state()
 
     def draw_stack(self):
         for x in range(BOARD_WIDTH):
@@ -1072,8 +1028,8 @@ class HUD(GameObject):
                 _fps //= 10
 
     def draw_hud(self):
-        _score = board.score
-        _num_line = board.total_line_cleared
+        _score = game_scene.score
+        _num_line = game_scene.total_line_cleared
         if PI:
             if not self.need_redraw:
                 return
@@ -1090,8 +1046,8 @@ class HUD(GameObject):
                         _num_line //= 10
 
                 # draw next piece
-                if board.next_piece is not None:
-                    self.draw_piece(board.next_piece, 0, 0, draw_surface)
+                if game_scene.next_piece is not None:
+                    self.draw_piece(game_scene.next_piece, 0, 0, draw_surface)
 
                 device.show()
         else:
@@ -1106,10 +1062,10 @@ class HUD(GameObject):
                     _num_line //= 10
 
             # draw next piece
-            if board.next_piece is not None:
-                self.draw_piece(board.next_piece, 0, 0, application_surface)
+            if game_scene.next_piece is not None:
+                self.draw_piece(game_scene.next_piece, 0, 0, application_surface)
 
-            self.draw_lines(board.total_line_cleared, 0, 0, application_surface)
+            self.draw_lines(game_scene.total_line_cleared, 0, 0, application_surface)
 
 
 class PieceDealer:
@@ -1179,6 +1135,111 @@ class PieceDealerBagAlex(PieceDealer):
         return random.choice(rare_piece_candidates)
 
 
+class Scene:
+    def __init__(self):
+        self.active = True
+
+    def enter(self):
+        pass
+
+    def update(self):
+        pass
+
+    def exit(self):
+        pass
+
+
+class MenuScene(Scene):
+    def update(self):
+        if input_manager.connected_joystick:
+            neopixel_screen.set_cell(3, 1, 9)
+        elif input_manager.disconnected_joystick:
+            neopixel_screen.set_cell(3, 1, 0)
+        if input_manager.pressed_any:
+            scene_manager.change_scene(game_scene)
+
+
+class GameScene(Scene):
+    def __init__(self):
+        super().__init__()
+        self.falling_piece = falling_piece
+        self.line_cleaner = LineCleaner()
+        self.board_filler = board_filler
+        self.next_piece = None
+        self.state = state_wait
+        self.score = 0
+        self.total_line_cleared = 0
+        self.level = 0
+        self.hud_show_lines = False
+
+    def enter(self):
+        neopixel_screen.fill(0)
+        falling_piece.__init__()
+        falling_piece.active = True
+        hud.active = True
+        hud.visible = True
+        self.score = 0
+        self.total_line_cleared = 0
+        self.level = 0
+        self.next_piece = None
+        self.pick_next_piece()
+        self.begin_fall_state()
+
+    def update(self):
+        if self.active:
+            if input_manager.pressed_pause:
+                self.active = False
+                return
+            if self.state == state_fall:
+                falling_piece.update()
+            elif self.state == state_clear:
+                self.line_cleaner.update()
+            elif self.state == state_fill:
+                self.board_filler.update()
+        else:
+            if input_manager.pressed_pause:
+                self.active = True
+
+    def exit(self):
+        board.reset()
+        neopixel_screen.fill(0)
+        neopixel_screen.current_palette = 0
+
+    def pick_next_piece(self):
+        self.next_piece = piece_dealer.deal_piece()
+        hud.need_redraw = True
+
+    def begin_fall_state(self):
+        self.state = state_fall
+        falling_piece.reset(self.next_piece)
+        self.pick_next_piece()
+
+    def begin_wait_state(self):
+        self.state = state_wait
+        falling_piece.visible = False
+        hud.visible = False
+
+    def begin_fill_state(self):
+        self.board_filler.reset()
+        self.state = state_fill
+
+    def transition_to_clear_state(self):
+        self.state = state_clear
+        #line_cleaner.enter()
+
+    def check_for_complete_line(self):
+        complete_lines = []
+        for y in range(board.height):
+            if board.is_line_complete(y):
+                complete_lines.append(y)
+        if len(complete_lines) > 0:
+            self.state = state_clear
+            self.line_cleaner.enter(complete_lines)
+        else:
+            falling_piece.reset(self.next_piece)
+            self.pick_next_piece()
+
+
 def is_on_board(x, y):
     return 0 <= x < board.width and y < board.height
 
@@ -1215,9 +1276,6 @@ state_clear = 1
 state_fill = 2
 state_wait = 3
 state_pause = 4
-state_wait_for_controller = 5
-state = StateMachine()
-state.set_state(state_wait)
 
 # Init
 if PI:
@@ -1238,14 +1296,16 @@ pygame.joystick.init()
 board = Board()
 piece_dealer = PieceDealerBagAlex()
 falling_piece = Piece()
-board.board_filler = BoardFiller()
+board_filler = BoardFiller()
 hud = HUD()
+scene_manager = SceneManager()
 input_manager = InputManager()
+menu_scene = MenuScene()
+game_scene = GameScene()
+scene_manager.change_scene(menu_scene)
 
 draw_list = [hud]
 update_list = [board, falling_piece, hud]
-board.active = True
-board.visible = True
 
 clock = pygame.time.Clock()
 
@@ -1273,9 +1333,7 @@ while True:
     input_manager.update()
 
     # update
-    for game_object in update_list:
-        if game_object.active:
-            game_object.update()
+    scene_manager.update()
 
     if input_manager.pressed_quit:
         terminate()
