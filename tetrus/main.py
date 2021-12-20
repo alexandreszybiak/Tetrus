@@ -344,6 +344,8 @@ number_font = [
     0x1F, 0x15, 0x1F,
     0x17, 0x15, 0x1F]
 
+pause_icon = [0x1f, 0x00, 0x00, 0x1f]
+
 shape_previews = {'s': ShapePreviews.S.value,
                   'z': ShapePreviews.Z.value,
                   'j': ShapePreviews.J.value,
@@ -1187,10 +1189,12 @@ class GameScene(Scene):
 
     def update(self):
         if self.active:
-            if input_manager.pressed_pause:
-                self.active = False
-                return
             if self.state == state_fall:
+                if input_manager.pressed_pause:
+                    self.active = False
+                    neopixel_screen.fill(0)
+                    draw_pause_icon(3, 7)
+                    return
                 falling_piece.update()
             elif self.state == state_clear:
                 self.line_cleaner.update()
@@ -1199,6 +1203,8 @@ class GameScene(Scene):
         else:
             if input_manager.pressed_pause:
                 self.active = True
+                neopixel_screen.fill(0)
+                board.draw_stack()
 
     def exit(self):
         board.reset()
@@ -1261,6 +1267,13 @@ def luma_draw(x, y, color, draw_surface):
         rect_x = pygame.display.get_window_size()[0] / 2 - LUMA_WIDTH / 2 + x * (LUMA_SIZE + LUMA_SPACING)
         rect_y = pygame.display.get_window_size()[1] / 2 + NEOPIXEL_HEIGHT / 2 + y * (LUMA_SIZE + LUMA_SPACING)
         pygame.draw.rect(draw_surface, color, (rect_x, rect_y, LUMA_SIZE, LUMA_SIZE))
+
+
+def draw_pause_icon(offset_x, offset_y):
+    for x in range(0, 4):
+        for y in range(0, 5):
+            if pause_icon[x] & mask[y]:
+                neopixel_screen.set_cell(offset_x + x, offset_y + y, 9)
 
 
 def terminate():
