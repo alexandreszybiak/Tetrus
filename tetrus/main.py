@@ -1,4 +1,4 @@
-PI = False
+PI = True
 
 # Constant
 mask = bytearray([1, 2, 4, 8, 16, 32, 64, 128])
@@ -178,8 +178,11 @@ color_indexes = {"background": 0,
                  "cleared line": 11
                  }
 
-color_palettes = [colors_meadow, colors_spring, colors_autumn, colors_grey, colors_night, colors_bubble, colors_lava,
+color_palettes = [colors_default, colors_spring, colors_autumn, colors_grey, colors_night, colors_bubble, colors_lava,
                   colors_joker]
+
+if PI:
+    color_palettes = [colors_meadow, colors_spring, colors_autumn, colors_grey, colors_night, colors_bubble, colors_lava, colors_joker]
 
 # Color Constants
 BLACK = (0, 0, 0)
@@ -1209,6 +1212,7 @@ class GameScene(Scene):
                 self.active = True
                 neopixel_screen.fill(0)
                 board.draw_stack()
+                falling_piece.draw_piece(color_indexes["piece_shadow"], add_y=falling_piece.get_drop_position())
 
     def exit(self):
         board.reset()
