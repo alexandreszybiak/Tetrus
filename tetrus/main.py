@@ -15,10 +15,10 @@ JKEY_X = 3
 JKEY_Y = 4
 JKEY_A = 0
 JKEY_B = 1
-JKEY_R = 7
+JKEY_START = 7
 JKEY_L = 6
 JKEY_SEL = 10
-JKEY_START = 11
+JKEY_R = 11
 
 # Display simulation Constants
 NEOPIXEL_SIZE = 26
@@ -1190,7 +1190,7 @@ class GameScene(Scene):
     def update(self):
         if self.active:
             if self.state == state_fall:
-                if input_manager.pressed_pause:
+                if input_manager.pressed_pause or not input_manager.joystick_is_connected:
                     self.active = False
                     neopixel_screen.fill(0)
                     draw_pause_icon(3, 7)
