@@ -1,4 +1,4 @@
-PI = True
+PI = False
 
 # Constant
 mask = bytearray([1, 2, 4, 8, 16, 32, 64, 128])
@@ -19,6 +19,10 @@ JKEY_START = 7
 JKEY_L = 6
 JKEY_SEL = 10
 JKEY_R = 11
+
+if PI:
+    JKEY_START = 11
+    JKEY_R = 7
 
 # Display simulation Constants
 NEOPIXEL_SIZE = 26
