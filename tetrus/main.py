@@ -353,6 +353,12 @@ number_font = [
 
 pause_icon = [0x1f, 0x00, 0x00, 0x1f]
 
+t_letter = [0x01, 0x1f, 0x01]
+e_letter = [0x1f, 0x15, 0x11]
+r_letter = [0x1f, 0x05, 0x1b]
+u_letter = [0x1f, 0x10, 0x1f]
+s_letter = [0x16, 0x15, 0x0d]
+
 shape_previews = {'s': ShapePreviews.S.value,
                   'z': ShapePreviews.Z.value,
                   'j': ShapePreviews.J.value,
@@ -414,6 +420,8 @@ class InputManager:
         self.pressing_right = False
         self.pressing_down = False
         self.pressed_debug = False
+        self.pressed_simulate_gamepad_connection = False
+        self.pressed_simulate_gamepad_deconnection = False
         self.pressed_left = False
         self.pressed_right = False
         self.pressed_down = False
@@ -450,6 +458,12 @@ class InputManager:
                 self.disconnected_joystick = True
                 self.joystick_is_connected = False
             self.joystick = None
+        if self.pressed_simulate_gamepad_connection:
+            self.connected_joystick = True
+            self.joystick_is_connected = True
+        elif self.pressed_simulate_gamepad_deconnection:
+            self.disconnected_joystick = True
+            self.joystick_is_connected = False
 
     def update(self):
         self.update_controller_status()
@@ -464,6 +478,8 @@ class InputManager:
         self.pressed_palette_right = False
         self.pressed_quit = False
         self.pressed_debug = False
+        self.pressed_simulate_gamepad_connection = False
+        self.pressed_simulate_gamepad_deconnection = False
         self.pressed_pause = False
         self.pressed_any = False
         self.released_down = False
@@ -488,6 +504,10 @@ class InputManager:
                     self.pressed_hard_drop = True
                 elif event.key == K_d:
                     self.pressed_reset_board = True
+                elif event.key == K_q:
+                    self.pressed_simulate_gamepad_connection = True
+                elif event.key == K_w:
+                    self.pressed_simulate_gamepad_deconnection = True
                 elif event.key == K_c:
                     self.pressed_palette_left = True
                 elif event.key == K_v:
@@ -1159,13 +1179,24 @@ class Scene:
 
 
 class MenuScene(Scene):
+    def enter(self):
+        self.draw_title(color_indexes["piece_shadow"])
+
     def update(self):
         if input_manager.connected_joystick:
-            neopixel_screen.set_cell(3, 1, 9)
+            self.draw_title(1)
         elif input_manager.disconnected_joystick:
-            neopixel_screen.set_cell(3, 1, 0)
-        if input_manager.pressed_any:
+            self.draw_title(color_indexes["piece_shadow"])
+        if input_manager.pressed_pause:
             scene_manager.change_scene(game_scene)
+
+    def draw_title(self, color_index):
+        draw_letter(1, 2, t_letter, color_index)
+        draw_letter(6, 2, e_letter, color_index)
+        draw_letter(1, 8, t_letter, color_index)
+        draw_letter(6, 8, r_letter, color_index)
+        draw_letter(1, 14, u_letter, color_index)
+        draw_letter(6, 14, s_letter, color_index)
 
 
 class GameScene(Scene):
@@ -1284,6 +1315,13 @@ def draw_pause_icon(offset_x, offset_y):
                 neopixel_screen.set_cell(offset_x + x, offset_y + y, 9)
 
 
+def draw_letter(offset_x, offset_y, letter, color_index):
+    for x in range(0, 3):
+        for y in range(0, 5):
+            if letter[x] & mask[y]:
+                neopixel_screen.set_cell(offset_x + x, offset_y + y, color_index)
+
+
 def terminate():
     neopixel_screen.fill(0)
     neopixel_screen.refresh()
@@ -1321,9 +1359,6 @@ board_filler = BoardFiller()
 hud = HUD()
 scene_manager = SceneManager()
 input_manager = InputManager()
-menu_scene = MenuScene()
-game_scene = GameScene()
-scene_manager.change_scene(menu_scene)
 
 draw_list = [hud]
 update_list = [board, falling_piece, hud]
@@ -1336,13 +1371,14 @@ else:
     neopixel_screen = NeoPixelScreenSimulator()
 
 neopixel_screen.fill(0)
-neopixel_screen.set_cell(1, 1, 1)
-if input_manager.joystick_is_connected:
-    neopixel_screen.set_cell(3, 1, 9)
 
 if not PI:
     application_surface.fill(SIMULATOR_BACKGROUND)
     luma_fill(LUMA_COLOR_OFF)
+
+menu_scene = MenuScene()
+game_scene = GameScene()
+scene_manager.change_scene(menu_scene)
 
 while True:
     # Pre-draw
