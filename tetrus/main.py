@@ -629,6 +629,7 @@ class NeoPixelScreenSimulator(NeoPixelScreen):
         self.content = []
         for i in range(BOARD_WIDTH):
             self.content.append([0] * BOARD_HEIGHT)
+        application_surface.fill(SIMULATOR_BACKGROUND)
 
     def set_cell(self, x, y, color_index):
         self.content[x][y] = color_palettes[self.current_palette][color_index]
@@ -653,6 +654,66 @@ class NeoPixelScreenSimulator(NeoPixelScreen):
             for y in range(BOARD_HEIGHT):
                 self.draw_cell(x, y, self.content[x][y])
         pygame.display.update()
+
+
+class LumaScreenPrototype:
+    def __init__(self):
+        self.child = None
+
+    def clear(self):
+        pass
+
+    def refresh(self):
+        pass
+
+    @staticmethod
+    def draw_point(x, y, color, surface):
+        pass
+
+
+class LumaScreen(LumaScreenPrototype):
+    def __init__(self):
+        super().__init__()
+        self.need_redraw = True
+
+    @staticmethod
+    def draw_point(x, y, color, surface):
+        surface.point((x, y), fill="white")
+
+    def refresh(self):
+        if self.need_redraw:
+            with canvas(device) as draw_surface:
+                self.child.draw(draw_surface)
+                device.show()
+            self.need_redraw = False
+
+
+class LumaScreenSimulator(LumaScreenPrototype):
+    def __init__(self):
+        super().__init__()
+
+    @staticmethod
+    def draw_point(x, y, color, surface):
+        pygame.display.get_window_size()
+        rect_x = pygame.display.get_window_size()[0] / 2 - LUMA_WIDTH / 2 + x * (LUMA_SIZE + LUMA_SPACING)
+        rect_y = pygame.display.get_window_size()[1] / 2 + NEOPIXEL_HEIGHT / 2 + y * (LUMA_SIZE + LUMA_SPACING)
+        pygame.draw.rect(surface, color, (rect_x, rect_y, LUMA_SIZE, LUMA_SIZE))
+
+    def clear(self):
+        for y in range(8):
+            for x in range(32):
+                self.draw_point(x, y, LUMA_COLOR_OFF, application_surface)
+
+    def refresh(self):
+        self.child.draw(application_surface)
+
+
+class LumaScreenChild:
+    def __init__(self):
+        self.parent_device = luma_screen
+
+    def draw(self, surface):
+        pass
 
 
 class Piece(GameObject):
@@ -1001,83 +1062,6 @@ class Board(GameObject):
                 neopixel_screen.set_cell(x, y, self.content[x][y])
 
 
-class LumaScreenPrototype:
-    def clear(self):
-        pass
-
-    def refresh(self):
-        pass
-
-    @staticmethod
-    def draw_point(x, y, color, surface):
-        pass
-
-    def draw_piece(self, piece, offset_x, offset_y, surface):
-        for x in range(0, 8):
-            for y in range(0, 4):
-                index = x // 2 + y // 2 * 4
-                if shape_previews[piece][index] == 1:
-                    self.draw_point(offset_x + x, offset_y + y, LUMA_COLOR_ON, surface)
-
-    def draw_score(self, number, offset_x, offset_y, surface):
-        for x in range(0, 3):
-            for y in range(0, 5):
-                if number_font[3 * number + x] & mask[y]:
-                    self.draw_point(offset_x + x, offset_y + y, LUMA_COLOR_ON, surface)
-
-    def draw_lines(self, number, offset_x, offset_y, surface):
-        for i in range(0, number % 10):
-            self.draw_point(31 - i, 6, LUMA_COLOR_ON, surface)
-
-    def draw_hud(self, surface):
-        _score = game_scene.score
-        _num_line = game_scene.total_line_cleared
-        # draw score
-        for i in range(0, 6):
-            self.draw_score(_score % 10, 29 - i * 4, 0, surface)
-            _score //= 10
-
-        # draw next piece
-        if game_scene.next_piece is not None:
-            self.draw_piece(game_scene.next_piece, 0, 0, surface)
-
-        self.draw_lines(game_scene.total_line_cleared, 0, 0, surface)
-
-
-class LumaScreen(LumaScreenPrototype):
-    def __init__(self):
-        self.need_redraw = True
-
-    @staticmethod
-    def draw_point(x, y, color, surface):
-        surface.point((x, y), fill="white")
-
-    def refresh(self):
-        if self.need_redraw:
-            with canvas(device) as draw_surface:
-                self.draw_hud(draw_surface)
-                device.show()
-            self.need_redraw = False
-
-
-class LumaScreenSimulator(LumaScreenPrototype):
-
-    @staticmethod
-    def draw_point(x, y, color, surface):
-        pygame.display.get_window_size()
-        rect_x = pygame.display.get_window_size()[0] / 2 - LUMA_WIDTH / 2 + x * (LUMA_SIZE + LUMA_SPACING)
-        rect_y = pygame.display.get_window_size()[1] / 2 + NEOPIXEL_HEIGHT / 2 + y * (LUMA_SIZE + LUMA_SPACING)
-        pygame.draw.rect(surface, color, (rect_x, rect_y, LUMA_SIZE, LUMA_SIZE))
-
-    def clear(self):
-        for y in range(8):
-            for x in range(32):
-                self.draw_point(x, y, LUMA_COLOR_OFF, application_surface)
-
-    def refresh(self):
-        self.draw_hud(application_surface)
-
-
 class PieceDealer:
     def __init__(self):
         pass
@@ -1140,6 +1124,58 @@ class PieceDealerBagAlex(PieceDealer):
         return random.choice(rare_piece_candidates)
 
 
+class Hud(LumaScreenChild):
+    def draw_piece(self, piece, offset_x, offset_y, surface):
+        for x in range(0, 8):
+            for y in range(0, 4):
+                index = x // 2 + y // 2 * 4
+                if shape_previews[piece][index] == 1:
+                    self.parent_device.draw_point(offset_x + x, offset_y + y, LUMA_COLOR_ON, surface)
+
+    def draw_score(self, number, offset_x, offset_y, surface):
+        for x in range(0, 3):
+            for y in range(0, 5):
+                if number_font[3 * number + x] & mask[y]:
+                    self.parent_device.draw_point(offset_x + x, offset_y + y, LUMA_COLOR_ON, surface)
+
+    def draw_lines(self, number, offset_x, offset_y, surface):
+        for i in range(0, number % 10):
+            self.parent_device.draw_point(31 - i, 6, LUMA_COLOR_ON, surface)
+
+    def draw(self, surface):
+        _score = game_scene.score
+        _num_line = game_scene.total_line_cleared
+        # draw score
+        for i in range(0, 6):
+            self.draw_score(_score % 10, 29 - i * 4, 0, surface)
+            _score //= 10
+
+        # draw next piece
+        if game_scene.next_piece is not None:
+            self.draw_piece(game_scene.next_piece, 0, 0, surface)
+
+        self.draw_lines(game_scene.total_line_cleared, 0, 0, surface)
+
+
+class MenuInfoPanel(LumaScreenChild):
+    def draw_score(self, number, offset_x, offset_y, surface):
+        for x in range(0, 3):
+            for y in range(0, 5):
+                if number_font[3 * number + x] & mask[y]:
+                    self.parent_device.draw_point(offset_x + x, offset_y + y, LUMA_COLOR_ON, surface)
+
+    def draw(self, surface):
+        _score = menu_scene.last_score
+
+        if _score == 0:
+            return
+
+        # draw score
+        for i in range(0, 6):
+            self.draw_score(_score % 10, 29 - i * 4, 0, surface)
+            _score //= 10
+
+
 class Scene:
     def __init__(self):
         self.active = True
@@ -1158,9 +1194,12 @@ class MenuScene(Scene):
     def __init__(self):
         super().__init__()
         self.last_score = 0
+        luma_screen.child = menu_info_panel
+        luma_screen.need_redraw = True
 
     def enter(self):
-        print(self.last_score)
+        luma_screen.child = menu_info_panel
+        luma_screen.need_redraw = True
         if input_manager.joystick_is_connected:
             self.draw_title(1)
         else:
@@ -1199,6 +1238,7 @@ class GameScene(Scene):
         self.hud_show_lines = False
 
     def enter(self):
+        luma_screen.child = hud
         neopixel_screen.fill(0)
         falling_piece.__init__()
         falling_piece.active = True
@@ -1327,6 +1367,7 @@ piece_dealer = PieceDealerBagAlex()
 falling_piece = Piece()
 board_filler = BoardFiller()
 
+
 scene_manager = SceneManager()
 input_manager = InputManager()
 
@@ -1339,11 +1380,10 @@ else:
     neopixel_screen = NeoPixelScreenSimulator()
     luma_screen = LumaScreenSimulator()
 
+menu_info_panel = MenuInfoPanel()
+hud = Hud()
+
 neopixel_screen.fill(0)
-
-if not PI:
-    application_surface.fill(SIMULATOR_BACKGROUND)
-
 luma_screen.clear()
 
 menu_scene = MenuScene()
