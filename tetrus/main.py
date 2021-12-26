@@ -1113,7 +1113,6 @@ class PieceDealerBag(PieceDealer):
     def fill_bag(self):
         self.bag = list(shapes.keys())
         random.shuffle(self.bag)
-        print(self.bag)
 
     def deal_piece(self):
         dealt_piece = self.bag.pop()
@@ -1141,13 +1140,11 @@ class PieceDealerBagAlex(PieceDealer):
         self.bag.append(random.choice(list(shapes)))
         self.bag.append(random.choice(list(shapes)))
         self.bag.append(self.get_rare_piece())
-        print(self.bag)
         random.shuffle(self.bag)
 
     def deal_piece(self):
         dealt_piece = self.bag.pop()
         self.piece_history[dealt_piece] = self.piece_history[dealt_piece] + 1
-        # print(self.piece_history)
         if len(self.bag) == 0:
             self.fill_bag()
         return dealt_piece
@@ -1158,8 +1155,6 @@ class PieceDealerBagAlex(PieceDealer):
         for i in self.piece_history:
             if self.piece_history.get(i) == rare_piece_quantity:
                 rare_piece_candidates.append(i)
-        print(rare_piece_candidates)
-        print(self.piece_history)
         choice = random.choice(rare_piece_candidates)
         return random.choice(rare_piece_candidates)
 
@@ -1179,8 +1174,16 @@ class Scene:
 
 
 class MenuScene(Scene):
+    def __init__(self):
+        super().__init__()
+        self.last_score = 0
+
     def enter(self):
-        self.draw_title(color_indexes["piece_shadow"])
+        print(self.last_score)
+        if input_manager.joystick_is_connected:
+            self.draw_title(1)
+        else:
+            self.draw_title(color_indexes["piece_shadow"])
 
     def update(self):
         if input_manager.connected_joystick:
@@ -1189,6 +1192,8 @@ class MenuScene(Scene):
             self.draw_title(color_indexes["piece_shadow"])
         if input_manager.pressed_pause:
             scene_manager.change_scene(game_scene)
+        if input_manager.pressed_quit:
+            terminate()
 
     def draw_title(self, color_index):
         draw_letter(1, 2, t_letter, color_index)
@@ -1244,6 +1249,8 @@ class GameScene(Scene):
                 neopixel_screen.fill(0)
                 board.draw_stack()
                 falling_piece.draw_piece(color_indexes["piece_shadow"], add_y=falling_piece.get_drop_position())
+        if input_manager.pressed_quit:
+            terminate()
 
     def exit(self):
         board.reset()
@@ -1267,6 +1274,7 @@ class GameScene(Scene):
     def begin_fill_state(self):
         self.board_filler.reset()
         self.state = state_fill
+        menu_scene.last_score = self.score
 
     def transition_to_clear_state(self):
         self.state = state_clear
@@ -1386,21 +1394,14 @@ while True:
         luma_fill(LUMA_COLOR_OFF)
     # neopixel_fill(NEOPIXEL_SIMULATOR_COLOR_OFF)
 
-    # Pre-update
-    input_manager.update()
-
     # update
+    input_manager.update()
     scene_manager.update()
 
-    if input_manager.pressed_quit:
-        terminate()
-
-    # Draw
+    # draw
     for sprite in draw_list:
         if sprite.visible:
             sprite.draw()
-
-    # Post-draw
     neopixel_screen.refresh()
 
     clock.tick(30)
