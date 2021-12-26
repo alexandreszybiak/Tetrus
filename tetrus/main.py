@@ -182,7 +182,8 @@ color_palettes = [colors_default, colors_spring, colors_autumn, colors_grey, col
                   colors_joker]
 
 if PI:
-    color_palettes = [colors_meadow, colors_spring, colors_autumn, colors_grey, colors_night, colors_bubble, colors_lava, colors_joker]
+    color_palettes = [colors_meadow, colors_spring, colors_autumn, colors_grey, colors_night, colors_bubble,
+                      colors_lava, colors_joker]
 
 # Color Constants
 BLACK = (0, 0, 0)
@@ -841,9 +842,9 @@ class Piece(GameObject):
                     neopixel_screen.set_cell(x + self.x, y + self.y, color_index)
         self.visible = False
         self.active = False
-        hud.show_lines = False
+        luma_screen.show_lines = False
         game_scene.score += self.drop_row_count
-        hud.need_redraw = True
+        luma_screen.need_redraw = True
         if game_scene.state == state_fall:
             game_scene.check_for_complete_line()
 
@@ -932,10 +933,10 @@ class LineCleaner:
                 self.last_clean_time = time.time()
                 if self.progress < len(self.target_list):
                     game_scene.total_line_cleared += 1
-                    hud.need_redraw = True
+                    luma_screen.need_redraw = True
                 if self.progress < 5:
                     game_scene.score += self.points_to_give
-                    hud.need_redraw = True
+                    luma_screen.need_redraw = True
             self.progress += 1
 
     def collapse_gaps(self):
@@ -1000,101 +1001,81 @@ class Board(GameObject):
                 neopixel_screen.set_cell(x, y, self.content[x][y])
 
 
-class HUD(GameObject):
-    def __init__(self):
-        super().__init__()
-        self.show_lines = False
-        self.show_fps = False
-        self.need_redraw = True
+class LumaScreenPrototype:
+    def clear(self):
+        pass
+
+    def refresh(self):
+        pass
 
     @staticmethod
-    def draw_piece(piece, offset_x, offset_y, draw_surface):
+    def draw_point(x, y, color, surface):
+        pass
+
+    def draw_piece(self, piece, offset_x, offset_y, surface):
         for x in range(0, 8):
             for y in range(0, 4):
                 index = x // 2 + y // 2 * 4
                 if shape_previews[piece][index] == 1:
-                    luma_draw(offset_x + x, offset_y + y, (255, 0, 0), draw_surface)
+                    self.draw_point(offset_x + x, offset_y + y, LUMA_COLOR_ON, surface)
 
-    @staticmethod
-    def draw_score(number, offset_x, offset_y, draw_surface):
+    def draw_score(self, number, offset_x, offset_y, surface):
         for x in range(0, 3):
             for y in range(0, 5):
                 if number_font[3 * number + x] & mask[y]:
-                    luma_draw(offset_x + x, offset_y + y, (255, 0, 0), draw_surface)
+                    self.draw_point(offset_x + x, offset_y + y, LUMA_COLOR_ON, surface)
 
-    @staticmethod
-    def draw_lines(number, offset_x, offset_y, draw_surface):
-
+    def draw_lines(self, number, offset_x, offset_y, surface):
         for i in range(0, number % 10):
-            luma_draw(31 - i, 6, (255, 0, 0), draw_surface)
+            self.draw_point(31 - i, 6, LUMA_COLOR_ON, surface)
 
-    def update(self):
-        if input_manager.pressed_debug:
-            self.show_fps = not self.show_fps
-            self.need_redraw = True
-
-    def draw(self):
-        if input_manager.pressed_debug:
-            self.draw_fps()
-        else:
-            self.draw_hud()
-
-    def draw_fps(self):
-        _fps = int(clock.get_fps())
-        if PI:
-            if not self.need_redraw:
-                return
-            self.need_redraw = False
-            with canvas(device) as draw_surface:
-                for i in range(0, 2):
-                    self.draw_score(_fps % 10, 29 - i * 4, 0, draw_surface)
-                    _fps //= 10
-
-                device.show()
-        else:
-            for i in range(0, 2):
-                self.draw_score(_fps % 10, 29 - i * 4, 0, application_surface)
-                _fps //= 10
-
-    def draw_hud(self):
+    def draw_hud(self, surface):
         _score = game_scene.score
         _num_line = game_scene.total_line_cleared
-        if PI:
-            if not self.need_redraw:
-                return
-            self.need_redraw = False
+        # draw score
+        for i in range(0, 6):
+            self.draw_score(_score % 10, 29 - i * 4, 0, surface)
+            _score //= 10
+
+        # draw next piece
+        if game_scene.next_piece is not None:
+            self.draw_piece(game_scene.next_piece, 0, 0, surface)
+
+        self.draw_lines(game_scene.total_line_cleared, 0, 0, surface)
+
+
+class LumaScreen(LumaScreenPrototype):
+    def __init__(self):
+        self.need_redraw = True
+
+    @staticmethod
+    def draw_point(x, y, color, surface):
+        surface.point((x, y), fill="white")
+
+    def refresh(self):
+        if self.need_redraw:
             with canvas(device) as draw_surface:
-                # draw score
-                if not self.show_lines:
-                    for i in range(0, 6):
-                        self.draw_score(_score % 10, 29 - i * 4, 0, draw_surface)
-                        _score //= 10
-                else:
-                    for i in range(0, 3):
-                        self.draw_score(_num_line % 10, 29 - i * 4, 0, draw_surface)
-                        _num_line //= 10
-
-                # draw next piece
-                if game_scene.next_piece is not None:
-                    self.draw_piece(game_scene.next_piece, 0, 0, draw_surface)
-
+                self.draw_hud(draw_surface)
                 device.show()
-        else:
-            # draw score
-            if not self.show_lines:
-                for i in range(0, 6):
-                    self.draw_score(_score % 10, 29 - i * 4, 0, application_surface)
-                    _score //= 10
-            else:
-                for i in range(0, 3):
-                    self.draw_score(_num_line % 10, 29 - i * 4, 0, application_surface)
-                    _num_line //= 10
+            self.need_redraw = False
 
-            # draw next piece
-            if game_scene.next_piece is not None:
-                self.draw_piece(game_scene.next_piece, 0, 0, application_surface)
 
-            self.draw_lines(game_scene.total_line_cleared, 0, 0, application_surface)
+class LumaScreenSimulator(LumaScreenPrototype):
+
+    @staticmethod
+    def draw_point(x, y, color, surface):
+        pygame.display.get_window_size()
+        rect_x = pygame.display.get_window_size()[0] / 2 - LUMA_WIDTH / 2 + x * (LUMA_SIZE + LUMA_SPACING)
+        rect_y = pygame.display.get_window_size()[1] / 2 + NEOPIXEL_HEIGHT / 2 + y * (LUMA_SIZE + LUMA_SPACING)
+        pygame.draw.rect(surface, color, (rect_x, rect_y, LUMA_SIZE, LUMA_SIZE))
+
+    def clear(self):
+        for y in range(8):
+            for x in range(32):
+                self.draw_point(x, y, LUMA_COLOR_OFF, application_surface)
+
+    def refresh(self):
+        self.draw_hud(application_surface)
 
 
 class PieceDealer:
@@ -1221,8 +1202,8 @@ class GameScene(Scene):
         neopixel_screen.fill(0)
         falling_piece.__init__()
         falling_piece.active = True
-        hud.active = True
-        hud.visible = True
+        luma_screen.active = True
+        luma_screen.visible = True
         self.score = 0
         self.total_line_cleared = 0
         self.level = 0
@@ -1259,7 +1240,7 @@ class GameScene(Scene):
 
     def pick_next_piece(self):
         self.next_piece = piece_dealer.deal_piece()
-        hud.need_redraw = True
+        luma_screen.need_redraw = True
 
     def begin_fall_state(self):
         self.state = state_fall
@@ -1269,7 +1250,7 @@ class GameScene(Scene):
     def begin_wait_state(self):
         self.state = state_wait
         falling_piece.visible = False
-        hud.visible = False
+        luma_screen.visible = False
 
     def begin_fill_state(self):
         self.board_filler.reset()
@@ -1278,7 +1259,7 @@ class GameScene(Scene):
 
     def transition_to_clear_state(self):
         self.state = state_clear
-        #line_cleaner.enter()
+        # line_cleaner.enter()
 
     def check_for_complete_line(self):
         complete_lines = []
@@ -1295,25 +1276,6 @@ class GameScene(Scene):
 
 def is_on_board(x, y):
     return 0 <= x < board.width and y < board.height
-
-
-def luma_fill(color):
-    if PI:
-        pass
-    else:
-        for y in range(8):
-            for x in range(32):
-                luma_draw(x, y, color, application_surface)
-
-
-def luma_draw(x, y, color, draw_surface):
-    if PI:
-        draw_surface.point((x, y), fill="white")
-    else:
-        pygame.display.get_window_size()
-        rect_x = pygame.display.get_window_size()[0] / 2 - LUMA_WIDTH / 2 + x * (LUMA_SIZE + LUMA_SPACING)
-        rect_y = pygame.display.get_window_size()[1] / 2 + NEOPIXEL_HEIGHT / 2 + y * (LUMA_SIZE + LUMA_SPACING)
-        pygame.draw.rect(draw_surface, color, (rect_x, rect_y, LUMA_SIZE, LUMA_SIZE))
 
 
 def draw_pause_icon(offset_x, offset_y):
@@ -1364,25 +1326,25 @@ board = Board()
 piece_dealer = PieceDealerBagAlex()
 falling_piece = Piece()
 board_filler = BoardFiller()
-hud = HUD()
+
 scene_manager = SceneManager()
 input_manager = InputManager()
-
-draw_list = [hud]
-update_list = [board, falling_piece, hud]
 
 clock = pygame.time.Clock()
 
 if PI:
     neopixel_screen = NeoPixelScreen()
+    luma_screen = LumaScreen()
 else:
     neopixel_screen = NeoPixelScreenSimulator()
+    luma_screen = LumaScreenSimulator()
 
 neopixel_screen.fill(0)
 
 if not PI:
     application_surface.fill(SIMULATOR_BACKGROUND)
-    luma_fill(LUMA_COLOR_OFF)
+
+luma_screen.clear()
 
 menu_scene = MenuScene()
 game_scene = GameScene()
@@ -1390,18 +1352,14 @@ scene_manager.change_scene(menu_scene)
 
 while True:
     # Pre-draw
-    if not PI:
-        luma_fill(LUMA_COLOR_OFF)
-    # neopixel_fill(NEOPIXEL_SIMULATOR_COLOR_OFF)
+    luma_screen.clear()
 
     # update
     input_manager.update()
     scene_manager.update()
 
     # draw
-    for sprite in draw_list:
-        if sprite.visible:
-            sprite.draw()
+    luma_screen.refresh()
     neopixel_screen.refresh()
 
     clock.tick(30)
