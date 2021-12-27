@@ -1,4 +1,6 @@
-PI = True
+from dataclasses import dataclass
+
+PI = False
 
 # Constant
 mask = bytearray([1, 2, 4, 8, 16, 32, 64, 128])
@@ -9,6 +11,7 @@ BOARD_HEIGHT = 20
 
 # Gameplay constants
 PAUSE_AFTER_HARD_DROP_TIME = 0.1
+PAUSE_BETWEEN_LINE_CLEAR_STEPS = 0.05
 
 # Gamepad Constants
 JKEY_X = 3
@@ -37,153 +40,39 @@ LUMA_WIDTH = 32 * (LUMA_SIZE + LUMA_SPACING)
 LUMA_HEIGHT = 8 * (LUMA_SIZE + LUMA_SPACING)
 BOTH_DEVICE_HEIGHT = NEOPIXEL_HEIGHT + LUMA_HEIGHT
 
-# Color Palettes
-colors_default = [0x000000,  # background
-                  0xffc96b,  # s
-                  0xffc16b,  # z
-                  0xff966b,  # j
-                  0xffaf6b,  # l
-                  0xe82a4d,  # i
-                  0xf54e5d,  # o
-                  0xff7c6b,  # t
-                  0x555555,  # piece shadow
-                  0x989898,  # placed_piece
-                  0xff0000,  # death_fill
-                  0xffffff  # cleared piece
-                  ]
 
-colors_meadow = [0x000000,  # background
-                 0x5096ff,  # s
-                 0x5096ff,  # z
-                 0x5096ff,  # j
-                 0x5096ff,  # l
-                 0x5096ff,  # i
-                 0x5096ff,  # o
-                 0x5096ff,  # t
-                 0x040404,  # piece shadow
-                 0x5da93c,  # placed_piece
-                 0xff0000,  # death_fill
-                 0xffffff  # cleared piece
-                 ]
+@dataclass
+class Palette:
+    piece_color: int = 0xff7c6b
+    stack_color: int = 0x989898
+    death_fill: int = 0xff0000
+    flash_color: int = 0xffffff
+    if PI:
+        ghost_color: int = 0x040404
+    else:
+        ghost_color: int = 0x222222
 
-colors_bubble = [0x000000,  # background
-                 0xfff840,  # s
-                 0xfff840,  # z
-                 0xfff840,  # j
-                 0xfff840,  # l
-                 0xfff840,  # i
-                 0xfff840,  # o
-                 0xfff840,  # t
-                 0x040404,  # piece shadow
-                 0xf33087,  # placed_piece
-                 0xff0000,  # death_fill
-                 0xffffff  # cleared piece
-                 ]
 
-colors_spring = [0x000000,  # background
-                 0x91ea1f,  # s
-                 0x91ea1f,  # z
-                 0x91ea1f,  # j
-                 0x91ea1f,  # l
-                 0x91ea1f,  # i
-                 0x91ea1f,  # o
-                 0x91ea1f,  # t
-                 0x040404,  # piece shadow
-                 0xe65987,  # placed_piece
-                 0xff0000,  # death_fill
-                 0xffffff  # cleared piece
-                 ]
+default_palette = Palette()
+meadow_palette = Palette(0x5096ff, 0x5da93c)
+bubble_palette = Palette(0xfff840, 0xf33087)
+spring_palette = Palette(0x91ea1f, 0xe65987)
+autumn_palette = Palette(0x5f991c, 0x883e25)
+grey_palette = Palette(0x6d7e74, 0x545e57)
+night_palette = Palette(0x3131d4, 0x1f1f72)
+joker_palette = Palette(0x42ec0e, 0xb500cb)
+lava_palette = Palette(0xed5e2d, 0xd8341e)
 
-colors_autumn = [0x000000,  # background
-                 0x5f991c,  # s
-                 0x5f991c,  # z
-                 0x5f991c,  # j
-                 0x5f991c,  # l
-                 0x5f991c,  # i
-                 0x5f991c,  # o
-                 0x5f991c,  # t
-                 0x040404,  # piece shadow
-                 0x883e25,  # placed_piece
-                 0xff0000,  # death_fill
-                 0xffffff  # cleared piece
-                 ]
-
-colors_grey = [0x000000,  # background
-               0x6d7e74,  # s
-               0x6d7e74,  # z
-               0x6d7e74,  # j
-               0x6d7e74,  # l
-               0x6d7e74,  # i
-               0x6d7e74,  # o
-               0x6d7e74,  # t
-               0x040404,  # piece shadow
-               0x545e57,  # placed_piece
-               0xff0000,  # death_fill
-               0xffffff  # cleared piece
-               ]
-
-colors_night = [0x000000,  # background
-                0x3131d4,  # s
-                0x3131d4,  # z
-                0x3131d4,  # j
-                0x3131d4,  # l
-                0x3131d4,  # i
-                0x3131d4,  # o
-                0x3131d4,  # t
-                0x040404,  # piece shadow
-                0x1f1f72,  # placed_piece
-                0xff0000,  # death_fill
-                0xffffff  # cleared piece
-                ]
-
-colors_joker = [0x000000,  # background
-                0x42ec0e,  # s
-                0x42ec0e,  # z
-                0x42ec0e,  # j
-                0x42ec0e,  # l
-                0x42ec0e,  # i
-                0x42ec0e,  # o
-                0x42ec0e,  # t
-                0x040404,  # piece shadow
-                0xb500cb,  # placed_piece
-                0xff0000,  # death_fill
-                0xffffff  # cleared piece
-                ]
-
-colors_lava = [0x000000,  # background
-               0xed5e2d,  # s
-               0xed5e2d,  # z
-               0xed5e2d,  # j
-               0xed5e2d,  # l
-               0xed5e2d,  # i
-               0xed5e2d,  # o
-               0xed5e2d,  # t
-               0x040404,  # piece shadow
-               0xd8341e,  # placed_piece
-               0xff0000,  # death_fill
-               0xffffff  # cleared piece
-               ]
-
-color_indexes = {"background": 0,
-                 "s": 1,
-                 "z": 2,
-                 "j": 3,
-                 "l": 4,
-                 "i": 5,
-                 "o": 6,
-                 "t": 7,
-                 "piece_shadow": 8,
-                 "placed_piece": 9,
-                 "death_fill": 10,
-                 "cleared line": 11
-                 }
-
-color_palettes = [colors_default, colors_spring, colors_autumn, colors_grey, colors_night, colors_bubble, colors_lava,
-                  colors_joker]
-
-if PI:
-    color_palettes = [colors_meadow, colors_spring, colors_autumn, colors_grey, colors_night, colors_bubble,
-                      colors_lava, colors_joker]
+palettes = [
+    default_palette,
+    meadow_palette,
+    spring_palette,
+    autumn_palette,
+    grey_palette,
+    night_palette,
+    lava_palette,
+    joker_palette
+]
 
 # Color Constants
 BLACK = (0, 0, 0)
@@ -592,18 +481,18 @@ class NeoPixelScreen:
         self.current_palette = 0
         self.need_refresh = True
 
-    def set_cell(self, x, y, color_index):
-        self.draw_cell(x, y, color_palettes[self.current_palette][color_index])
+    def set_cell(self, x, y, color):
+        self.draw_cell(x, y, color)
 
     def clear_cell(self, x, y):
         self.draw_cell(x, y, BLACK)
 
-    def set_line(self, y, color_index):
+    def set_line(self, y, color):
         for x in range(BOARD_WIDTH):
-            self.set_cell(x, y, color_index)
+            self.set_cell(x, y, color)
 
-    def fill(self, color_index):
-        pixels.fill(color_palettes[self.current_palette][color_index])
+    def fill(self, color):
+        pixels.fill(color)
         self.need_refresh = True
 
     def draw_cell(self, x, y, color):
@@ -628,16 +517,16 @@ class NeoPixelScreenSimulator(NeoPixelScreen):
         super().__init__()
         application_surface.fill(SIMULATOR_BACKGROUND)
 
-    def set_cell(self, x, y, color_index):
-        self.draw_cell(x, y, color_palettes[self.current_palette][color_index])
+    def set_cell(self, x, y, color):
+        self.draw_cell(x, y, color)
 
     def clear_cell(self, x, y):
         self.draw_cell(x, y, 0)
 
-    def fill(self, color_index):
+    def fill(self, color):
         for x in range(BOARD_WIDTH):
             for y in range(BOARD_HEIGHT):
-                self.draw_cell(x, y, color_palettes[self.current_palette][color_index])
+                self.draw_cell(x, y, color)
 
     def draw_cell(self, x, y, color):
         pygame.display.get_window_size()
@@ -715,7 +604,8 @@ class Piece(GameObject):
         self.shape = shapes[shape_name]
         self.template_width = 5
         self.template_height = 5
-        self.color_index = color_indexes[shape_name]
+        self.color = game_scene.current_palette.piece_color
+        self.ghost_color = game_scene.current_palette.ghost_color
         self.fall_frequency = 0.8
         self.press_down_frequency = 0.035
         self.run_charge_time = 0.15
@@ -735,7 +625,8 @@ class Piece(GameObject):
         self.y = -2
         self.rotation = 0
         self.shape = shapes[shape_name]
-        self.color_index = color_indexes[shape_name]
+        self.color = game_scene.current_palette.piece_color
+        self.ghost_color = game_scene.current_palette.ghost_color
         self.last_fall_time = time.time()
         self.last_soft_drop_time = time.time()
         self.last_run_time = time.time()
@@ -746,11 +637,11 @@ class Piece(GameObject):
         self.drop_row_count = 0
         self.movable = True
         self.hard_dropped = False
-        self.draw_piece(color_indexes["piece_shadow"], add_y=self.get_drop_position())
-        self.draw_piece(self.color_index)
+        self.draw_piece(self.ghost_color, add_y=self.get_drop_position())
+        self.draw_piece(self.color)
         if not self.is_valid_position(add_x=0, add_y=0):
             game_scene.begin_fill_state()
-            self.add_to_board(self.color_index)
+            self.add_to_board()
             self.visible = True
         input_manager.pressing_down = False
         # input_manager.pressing_left = False
@@ -785,7 +676,7 @@ class Piece(GameObject):
                 self.hard_drop()
             # debug, reset the board
             if input_manager.pressed_reset_board:
-                board.reset()
+                stack.reset()
             # fast movements
             if input_manager.pressing_left:
                 self.run(-1)
@@ -806,9 +697,9 @@ class Piece(GameObject):
         self.rotation = (self.rotation + direction) % len(self.shape)
         if not self.is_valid_position():
             self.rotation = (self.rotation - direction) % len(self.shape)
-            self.draw_piece(self.color_index)
-        self.draw_piece(color_indexes["piece_shadow"], add_y=self.get_drop_position())
-        self.draw_piece(self.color_index)
+            self.draw_piece(self.color)
+        self.draw_piece(self.ghost_color, add_y=self.get_drop_position())
+        self.draw_piece(self.color)
 
     def speed_up(self):
         if self.fall_frequency > 0.216:
@@ -822,7 +713,7 @@ class Piece(GameObject):
         else:
             self.clear_piece()
             self.y += 1
-            self.draw_piece(self.color_index)
+            self.draw_piece(self.color)
 
     def move_horizontal(self, x):
         if self.is_valid_position(add_x=x):
@@ -830,8 +721,8 @@ class Piece(GameObject):
             self.clear_piece()
             self.x += x
             self.last_run_time = time.time()
-            self.draw_piece(color_indexes["piece_shadow"], add_y=self.get_drop_position())
-            self.draw_piece(self.color_index)
+            self.draw_piece(self.ghost_color, add_y=self.get_drop_position())
+            self.draw_piece(self.color)
         else:
             self.run_init_time = 0
             self.last_run_time = 0
@@ -876,20 +767,20 @@ class Piece(GameObject):
         self.movable = False
         self.hard_dropped = True
         self.last_hard_drop_time = time.time()
-        self.draw_piece(self.color_index)
+        self.draw_piece(self.color)
 
     def get_drop_position(self):
-        for i in range(1, board.height - self.y):
+        for i in range(1, stack.height - self.y):
             if not self.is_valid_position(add_y=i):
                 break
         return i - 1
 
-    def add_to_board(self, color_index=color_indexes["placed_piece"]):
+    def add_to_board(self):
         for x in range(self.template_width):
             for y in range(self.template_height):
                 if self.shape[self.rotation][y][x] != blank:
-                    board.set_cell(x + self.x, y + self.y, color_index)
-                    neopixel_screen.set_cell(x + self.x, y + self.y, color_index)
+                    stack.set_cell(x + self.x, y + self.y, stack.color)
+                    neopixel_screen.set_cell(x + self.x, y + self.y, stack.color)
         self.visible = False
         self.active = False
         luma_screen.show_lines = False
@@ -905,7 +796,7 @@ class Piece(GameObject):
                     continue
                 if not is_on_board(x + self.x + add_x, y + self.y + add_y):
                     return False
-                if board.get_cell(x + self.x + add_x, y + self.y + add_y) != blank:
+                if stack.get_cell(x + self.x + add_x, y + self.y + add_y) != blank:
                     return False
         return True
 
@@ -920,6 +811,7 @@ class BoardFiller:
         self.end_fill_time = 0
         self.last_fill_time = 0
         self.fill_frequency = 0.05
+        self.color = game_scene.current_palette.death_fill
 
     def reset(self):
         self.last_fill_time = time.time()
@@ -930,7 +822,7 @@ class BoardFiller:
             scene_manager.change_scene(menu_scene)
         elif self.line_to_fill > 0 and time.time() - self.last_fill_time > self.fill_frequency:
             self.line_to_fill -= 1
-            neopixel_screen.set_line(self.line_to_fill, color_indexes["death_fill"])
+            neopixel_screen.set_line(self.line_to_fill, self.color)
             self.end_fill_time = time.time()
             self.last_fill_time = time.time()
 
@@ -940,8 +832,9 @@ class LineCleaner:
         self.target_list = None
         self.progress = 0
         self.last_clean_time = 0
-        self.clean_frequency = 0.05
+        self.clean_frequency = PAUSE_BETWEEN_LINE_CLEAR_STEPS
         self.points_to_give = 0
+        self.burn_color = game_scene.current_palette.flash_color
 
     def enter(self, target_list):
         self.target_list = target_list
@@ -963,23 +856,24 @@ class LineCleaner:
                 self.collapse_gaps()
                 if game_scene.total_line_cleared // 10 > game_scene.level:
                     game_scene.level += 1
-                    neopixel_screen.current_palette = game_scene.level % len(color_palettes)
-                    board.draw_stack()
+                    game_scene.change_palette()
+                    stack.change_color()
+                    stack.draw_stack()
                     falling_piece.speed_up()
                 game_scene.begin_fall_state()
             else:
                 for y in self.target_list:
                     blank_pos = self.progress - 1
                     if 0 < self.progress < 6:
-                        board.set_cell(4 - blank_pos, y, blank)
-                        board.set_cell(5 + blank_pos, y, blank)
+                        stack.set_cell(4 - blank_pos, y, blank)
+                        stack.set_cell(5 + blank_pos, y, blank)
                         neopixel_screen.set_cell(4 - blank_pos, y, 0)
                         neopixel_screen.set_cell(5 + blank_pos, y, 0)
                     if self.progress < 5:
-                        board.set_cell(4 - self.progress, y, color_indexes["cleared line"])
-                        board.set_cell(5 + self.progress, y, color_indexes["cleared line"])
-                        neopixel_screen.set_cell(4 - self.progress, y, color_indexes["cleared line"])
-                        neopixel_screen.set_cell(5 + self.progress, y, color_indexes["cleared line"])
+                        stack.set_cell(4 - self.progress, y, self.burn_color)
+                        stack.set_cell(5 + self.progress, y, self.burn_color)
+                        neopixel_screen.set_cell(4 - self.progress, y, self.burn_color)
+                        neopixel_screen.set_cell(5 + self.progress, y, self.burn_color)
                 self.last_clean_time = time.time()
                 if self.progress < len(self.target_list):
                     game_scene.total_line_cleared += 1
@@ -990,26 +884,27 @@ class LineCleaner:
             self.progress += 1
 
     def collapse_gaps(self):
-        y = board.height - 1  # start y at the bottom of the board
+        y = stack.height - 1  # start y at the bottom of the board
         for y in self.target_list:
             for shift_line in range(y, 0, -1):
-                for x in range(board.width):
-                    top_color_index = board.content[x][shift_line - 1]
-                    board.content[x][shift_line] = top_color_index
+                for x in range(stack.width):
+                    top_color_index = stack.content[x][shift_line - 1]
+                    stack.content[x][shift_line] = top_color_index
                     if top_color_index == blank:
                         neopixel_screen.set_cell(x, shift_line, 0)
                     else:
-                        neopixel_screen.set_cell(x, shift_line, top_color_index)
-            for x in range(board.width):
-                board.content[x][0] = blank
-                neopixel_screen.set_cell(x, 0, 0)
+                        neopixel_screen.set_cell(x, shift_line, stack.color)
+            for x in range(stack.width):
+                stack.content[x][0] = blank
+                neopixel_screen.set_cell(x, 0, 0x000000)
 
 
-class Board(GameObject):
+class Stack(GameObject):
     def __init__(self):
         super().__init__()
         self.width = 10
         self.height = 20
+        self.color = game_scene.current_palette.stack_color
         self.content = []
         for i in range(self.width):
             self.content.append([blank] * self.height)
@@ -1023,7 +918,7 @@ class Board(GameObject):
         self.content[x][y] = value
 
     def set_line(self, y, value):
-        for x in range(board.width):
+        for x in range(stack.width):
             self.set_cell(x, y, value)
 
     def get_cell(self, x, y):
@@ -1048,7 +943,10 @@ class Board(GameObject):
             for y in range(BOARD_HEIGHT):
                 if self.content[x][y] == blank:
                     continue
-                neopixel_screen.set_cell(x, y, self.content[x][y])
+                neopixel_screen.set_cell(x, y, self.color)
+
+    def change_color(self):
+        self.color = game_scene.current_palette.stack_color
 
 
 class PieceDealer:
@@ -1190,34 +1088,36 @@ class MenuScene(Scene):
         luma_screen.child = menu_info_panel
         luma_screen.need_redraw = True
         if input_manager.joystick_is_connected:
-            self.draw_title(1)
+            self.draw_title(default_palette.piece_color)
         else:
-            self.draw_title(color_indexes["piece_shadow"])
+            self.draw_title(default_palette.ghost_color)
 
     def update(self):
         if input_manager.connected_joystick:
-            self.draw_title(1)
+            self.draw_title(default_palette.piece_color)
         elif input_manager.disconnected_joystick:
-            self.draw_title(color_indexes["piece_shadow"])
+            self.draw_title(default_palette.ghost_color)
         if input_manager.pressed_pause:
             scene_manager.change_scene(game_scene)
         if input_manager.pressed_quit:
             terminate()
 
-    def draw_title(self, color_index):
-        draw_letter(1, 2, t_letter, color_index)
-        draw_letter(6, 2, e_letter, color_index)
-        draw_letter(1, 8, t_letter, color_index)
-        draw_letter(6, 8, r_letter, color_index)
-        draw_letter(1, 14, u_letter, color_index)
-        draw_letter(6, 14, s_letter, color_index)
+    @staticmethod
+    def draw_title(color):
+        draw_letter(1, 2, t_letter, color)
+        draw_letter(6, 2, e_letter, color)
+        draw_letter(1, 8, t_letter, color)
+        draw_letter(6, 8, r_letter, color)
+        draw_letter(1, 14, u_letter, color)
+        draw_letter(6, 14, s_letter, color)
 
 
 class GameScene(Scene):
     def __init__(self):
         super().__init__()
+        self.current_palette = palettes[0]
         self.falling_piece = falling_piece
-        self.line_cleaner = LineCleaner()
+        self.line_cleaner = line_cleaner
         self.board_filler = board_filler
         self.next_piece = None
         self.state = state_wait
@@ -1236,6 +1136,8 @@ class GameScene(Scene):
         self.score = 0
         self.total_line_cleared = 0
         self.level = 0
+        self.current_palette = palettes[0]
+        stack.change_color()
         self.next_piece = None
         self.pick_next_piece()
         self.begin_fall_state()
@@ -1257,15 +1159,18 @@ class GameScene(Scene):
             if input_manager.pressed_pause:
                 self.active = True
                 neopixel_screen.fill(0)
-                board.draw_stack()
-                falling_piece.draw_piece(color_indexes["piece_shadow"], add_y=falling_piece.get_drop_position())
+                stack.draw_stack()
+                falling_piece.draw_piece(falling_piece.ghost_color, add_y=falling_piece.get_drop_position())
         if input_manager.pressed_quit:
             terminate()
 
     def exit(self):
-        board.reset()
+        stack.reset()
         neopixel_screen.fill(0)
         neopixel_screen.current_palette = 0
+
+    def change_palette(self):
+        self.current_palette = palettes[self.level % len(palettes)]
 
     def pick_next_piece(self):
         self.next_piece = piece_dealer.deal_piece()
@@ -1292,8 +1197,8 @@ class GameScene(Scene):
 
     def check_for_complete_line(self):
         complete_lines = []
-        for y in range(board.height):
-            if board.is_line_complete(y):
+        for y in range(stack.height):
+            if stack.is_line_complete(y):
                 complete_lines.append(y)
         if len(complete_lines) > 0:
             self.state = state_clear
@@ -1304,21 +1209,21 @@ class GameScene(Scene):
 
 
 def is_on_board(x, y):
-    return 0 <= x < board.width and y < board.height
+    return 0 <= x < stack.width and y < stack.height
 
 
 def draw_pause_icon(offset_x, offset_y):
     for x in range(0, 4):
         for y in range(0, 5):
             if pause_icon[x] & mask[y]:
-                neopixel_screen.set_cell(offset_x + x, offset_y + y, 9)
+                neopixel_screen.set_cell(offset_x + x, offset_y + y, game_scene.current_palette.piece_color)
 
 
-def draw_letter(offset_x, offset_y, letter, color_index):
+def draw_letter(offset_x, offset_y, letter, color):
     for x in range(0, 3):
         for y in range(0, 5):
             if letter[x] & mask[y]:
-                neopixel_screen.set_cell(offset_x + x, offset_y + y, color_index)
+                neopixel_screen.set_cell(offset_x + x, offset_y + y, color)
 
 
 def terminate():
@@ -1351,11 +1256,11 @@ joystick_detected = False
 pygame.init()
 pygame.joystick.init()
 
-board = Board()
 piece_dealer = PieceDealerBagAlex()
-falling_piece = Piece()
-board_filler = BoardFiller()
-
+stack = None
+falling_piece = None
+board_filler = None
+line_cleaner = None
 
 scene_manager = SceneManager()
 input_manager = InputManager()
@@ -1378,6 +1283,12 @@ luma_screen.fill(0)
 menu_scene = MenuScene()
 game_scene = GameScene()
 scene_manager.change_scene(menu_scene)
+
+stack = Stack()
+falling_piece = Piece()
+
+game_scene.board_filler = BoardFiller()
+game_scene.line_cleaner = LineCleaner()
 
 while True:
     # update
