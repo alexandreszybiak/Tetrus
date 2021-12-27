@@ -620,64 +620,53 @@ class NeoPixelScreen:
     def refresh(self):
         if self.need_refresh:
             pixels.show()
-        self.need_refresh = False
+            self.need_refresh = False
 
 
 class NeoPixelScreenSimulator(NeoPixelScreen):
     def __init__(self):
         super().__init__()
-        self.content = []
-        for i in range(BOARD_WIDTH):
-            self.content.append([0] * BOARD_HEIGHT)
         application_surface.fill(SIMULATOR_BACKGROUND)
 
     def set_cell(self, x, y, color_index):
-        self.content[x][y] = color_palettes[self.current_palette][color_index]
+        self.draw_cell(x, y, color_palettes[self.current_palette][color_index])
 
     def clear_cell(self, x, y):
-        self.content[x][y] = 0
+        self.draw_cell(x, y, 0)
 
     def fill(self, color_index):
         for x in range(BOARD_WIDTH):
             for y in range(BOARD_HEIGHT):
-                self.content[x][y] = color_palettes[self.current_palette][color_index]
+                self.draw_cell(x, y, color_palettes[self.current_palette][color_index])
 
-    @staticmethod
-    def draw_cell(x, y, color):
+    def draw_cell(self, x, y, color):
         pygame.display.get_window_size()
         rect_x = pygame.display.get_window_size()[0] / 2 - NEOPIXEL_WIDTH / 2 + x * (NEOPIXEL_SIZE + NEOPIXEL_SPACING)
         rect_y = pygame.display.get_window_size()[1] / 2 - NEOPIXEL_HEIGHT / 2 + y * (NEOPIXEL_SIZE + NEOPIXEL_SPACING)
         pygame.draw.rect(application_surface, color, (rect_x, rect_y, NEOPIXEL_SIZE, NEOPIXEL_SIZE))
+        self.need_refresh = True
 
     def refresh(self):
-        for x in range(BOARD_WIDTH):
-            for y in range(BOARD_HEIGHT):
-                self.draw_cell(x, y, self.content[x][y])
-        pygame.display.update()
+        if self.need_refresh:
+            pygame.display.update()
+            self.need_refresh = False
 
 
 class LumaScreenPrototype:
     def __init__(self):
         self.child = None
+        self.need_redraw = True
 
-    def clear(self):
+    def fill(self, color):
         pass
 
     def refresh(self):
         pass
 
-    @staticmethod
-    def draw_point(x, y, color, surface):
-        pass
-
 
 class LumaScreen(LumaScreenPrototype):
-    def __init__(self):
-        super().__init__()
-        self.need_redraw = True
-
     @staticmethod
-    def draw_point(x, y, color, surface):
+    def draw_point(x, y, surface):
         surface.point((x, y), fill="white")
 
     def refresh(self):
@@ -689,9 +678,6 @@ class LumaScreen(LumaScreenPrototype):
 
 
 class LumaScreenSimulator(LumaScreenPrototype):
-    def __init__(self):
-        super().__init__()
-
     @staticmethod
     def draw_point(x, y, color, surface):
         pygame.display.get_window_size()
@@ -699,13 +685,16 @@ class LumaScreenSimulator(LumaScreenPrototype):
         rect_y = pygame.display.get_window_size()[1] / 2 + NEOPIXEL_HEIGHT / 2 + y * (LUMA_SIZE + LUMA_SPACING)
         pygame.draw.rect(surface, color, (rect_x, rect_y, LUMA_SIZE, LUMA_SIZE))
 
-    def clear(self):
+    def fill(self, color):
         for y in range(8):
             for x in range(32):
                 self.draw_point(x, y, LUMA_COLOR_OFF, application_surface)
 
     def refresh(self):
-        self.child.draw(application_surface)
+        if self.need_redraw:
+            self.fill(0)
+            self.child.draw(application_surface)
+            self.need_redraw = False
 
 
 class LumaScreenChild:
@@ -1384,16 +1373,13 @@ menu_info_panel = MenuInfoPanel()
 hud = Hud()
 
 neopixel_screen.fill(0)
-luma_screen.clear()
+luma_screen.fill(0)
 
 menu_scene = MenuScene()
 game_scene = GameScene()
 scene_manager.change_scene(menu_scene)
 
 while True:
-    # Pre-draw
-    luma_screen.clear()
-
     # update
     input_manager.update()
     scene_manager.update()
