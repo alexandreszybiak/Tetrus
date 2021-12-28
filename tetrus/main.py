@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-PI = False
+PI = True
 
 # Constant
 mask = bytearray([1, 2, 4, 8, 16, 32, 64, 128])
@@ -45,8 +45,8 @@ BOTH_DEVICE_HEIGHT = NEOPIXEL_HEIGHT + LUMA_HEIGHT
 class Palette:
     piece_color: int = 0xff7c6b
     stack_color: int = 0x989898
-    death_fill: int = 0xff0000
     flash_color: int = 0xffffff
+    death_fill: int = 0xff0000
     if PI:
         ghost_color: int = 0x040404
     else:
@@ -62,9 +62,10 @@ grey_palette = Palette(0x6d7e74, 0x545e57)
 night_palette = Palette(0x3131d4, 0x1f1f72)
 joker_palette = Palette(0x42ec0e, 0xb500cb)
 lava_palette = Palette(0xed5e2d, 0xd8341e)
+organic_palette = Palette(0x37946e, 0x524b24, 0xffd800)
 
 palettes = [
-    default_palette,
+    organic_palette,
     meadow_palette,
     spring_palette,
     autumn_palette,
@@ -827,6 +828,39 @@ class BoardFiller:
             self.last_fill_time = time.time()
 
 
+class LineFlasher:
+    def __init__(self):
+        self.target_list = None
+        self.progress = 0
+        self.num_step = 4
+        self.last_step_time = 0
+        self.clean_frequency = 0.00
+        self.flash_color = game_scene.current_palette.flash_color
+
+    def enter(self, target_list):
+        self.target_list = target_list
+        self.progress = 0
+        self.last_step_time = 0
+
+    def update(self):
+        if time.time() - self.last_step_time > self.clean_frequency:
+            if self.progress == self.num_step:
+                game_scene.begin_clear_state()
+                game_scene.line_cleaner.enter(self.target_list)
+            else:
+                if self.progress % 2 == 0:
+                    for y in self.target_list:
+                        neopixel_screen.set_line(y, self.flash_color)
+                else:
+                    for y in self.target_list:
+                        neopixel_screen.set_line(y, stack.color)
+                self.last_step_time = time.time()
+            self.progress += 1
+
+    def change_color(self):
+        self.flash_color = game_scene.current_palette.flash_color
+
+
 class LineCleaner:
     def __init__(self):
         self.target_list = None
@@ -897,6 +931,9 @@ class LineCleaner:
             for x in range(stack.width):
                 stack.content[x][0] = blank
                 neopixel_screen.set_cell(x, 0, 0x000000)
+
+    def change_color(self):
+        self.burn_color = game_scene.current_palette.flash_color
 
 
 class Stack(GameObject):
@@ -1118,6 +1155,7 @@ class GameScene(Scene):
         self.current_palette = palettes[0]
         self.falling_piece = falling_piece
         self.line_cleaner = line_cleaner
+        self.line_flasher: LineFlasher = None
         self.board_filler = board_filler
         self.next_piece = None
         self.state = state_wait
@@ -1151,6 +1189,8 @@ class GameScene(Scene):
                     draw_pause_icon(3, 7)
                     return
                 falling_piece.update()
+            elif self.state == state_preclear:
+                self.line_flasher.update()
             elif self.state == state_clear:
                 self.line_cleaner.update()
             elif self.state == state_fill:
@@ -1171,6 +1211,8 @@ class GameScene(Scene):
 
     def change_palette(self):
         self.current_palette = palettes[self.level % len(palettes)]
+        self.line_flasher.change_color()
+        self.line_cleaner.change_color()
 
     def pick_next_piece(self):
         self.next_piece = piece_dealer.deal_piece()
@@ -1191,9 +1233,11 @@ class GameScene(Scene):
         self.state = state_fill
         menu_scene.last_score = self.score
 
-    def transition_to_clear_state(self):
+    def begin_clear_state(self):
         self.state = state_clear
-        # line_cleaner.enter()
+
+    def begin_preclear_state(self):
+        self.state = state_preclear
 
     def check_for_complete_line(self):
         complete_lines = []
@@ -1201,8 +1245,8 @@ class GameScene(Scene):
             if stack.is_line_complete(y):
                 complete_lines.append(y)
         if len(complete_lines) > 0:
-            self.state = state_clear
-            self.line_cleaner.enter(complete_lines)
+            self.begin_preclear_state()
+            self.line_flasher.enter(complete_lines)
         else:
             falling_piece.reset(self.next_piece)
             self.pick_next_piece()
@@ -1239,6 +1283,7 @@ state_clear = 1
 state_fill = 2
 state_wait = 3
 state_pause = 4
+state_preclear = 5
 
 # Init
 if PI:
@@ -1261,6 +1306,7 @@ stack = None
 falling_piece = None
 board_filler = None
 line_cleaner = None
+line_flasher = None
 
 scene_manager = SceneManager()
 input_manager = InputManager()
@@ -1289,6 +1335,7 @@ falling_piece = Piece()
 
 game_scene.board_filler = BoardFiller()
 game_scene.line_cleaner = LineCleaner()
+game_scene.line_flasher = LineFlasher()
 
 while True:
     # update
