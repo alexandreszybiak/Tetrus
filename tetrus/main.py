@@ -50,35 +50,46 @@ class Palette:
     if PI:
         ghost_color: int = 0x040404
     else:
-        ghost_color: int = 0x222222
+        ghost_color: int = 0x141414
 
 
 default_palette = Palette()
+beginner_palette = Palette(0x49a4f9,0x193b0a, 0x61ff1c)
+moonlight_palette = Palette(0xf2ec3a, 0x2c2c6a, 0xff4e88)
+pollution_palette = Palette(0x82a78c, 0x273123, 0x9affb5)
+ice_palette = Palette(0x9af4ff, 0x0090d3, 0xffffff)
 meadow_palette = Palette(0x5096ff, 0x5da93c)
-bubble_palette = Palette(0xfff840, 0xf33087)
-spring_palette = Palette(0x91ea1f, 0xe65987)
+bubble_palette = Palette(0xfff840, 0xf33087, 0xfffcae)
+spring_palette = Palette(0x76d90b, 0xe65987, 0xffdcb2)
 autumn_palette = Palette(0x5f991c, 0x883e25)
 grey_palette = Palette(0x6d7e74, 0x545e57)
-night_palette = Palette(0x3131d4, 0x1f1f72)
-joker_palette = Palette(0x42ec0e, 0xb500cb)
-lava_palette = Palette(0xed5e2d, 0xd8341e)
+night_palette = Palette(0x0c43e5, 0x092883, 0x056fff)
+joker_palette = Palette(0x42ec0e, 0xb500cb, 0xfff955)
+lava_palette = Palette(0xc5080c, 0x2a2727, 0x86281b)
 organic_palette = Palette(0x37946e, 0x524b24, 0xffd800)
+witch_palette = Palette(0x4730f3, 0x5c0d3c, 0xf33087)
+america_palette = Palette(0xea1f1f, 0x1f29ea, 0xffffff)
+magic_palette = Palette(0xe65987, 0x0b3248, 0x91ea1f)
 
 palettes = [
-    organic_palette,
-    meadow_palette,
+    beginner_palette,
+    moonlight_palette,
     spring_palette,
-    autumn_palette,
-    grey_palette,
+    ice_palette,
+    pollution_palette,
+    magic_palette,
+    witch_palette,
+    bubble_palette,
     night_palette,
     lava_palette,
-    joker_palette
+    joker_palette,
+    america_palette
 ]
 
 # Color Constants
 BLACK = (0, 0, 0)
 NEOPIXEL_SIMULATOR_COLOR_OFF = (0, 0, 0)
-SIMULATOR_BACKGROUND = (24, 24, 24)
+SIMULATOR_BACKGROUND = (15, 15, 15)
 
 # Constant for empty cell
 blank = '.'
