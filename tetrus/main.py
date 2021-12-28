@@ -11,7 +11,7 @@ BOARD_HEIGHT = 20
 
 # Gameplay constants
 PAUSE_AFTER_HARD_DROP_TIME = 0.1
-PAUSE_BETWEEN_LINE_CLEAR_STEPS = 0.05
+PAUSE_BETWEEN_LINE_CLEAR_STEPS = 0.03
 
 # Gamepad Constants
 JKEY_X = 3
@@ -46,6 +46,7 @@ class Palette:
     piece_color: int = 0xff7c6b
     stack_color: int = 0x989898
     flash_color: int = 0xffffff
+    drop_color: int = 0x0b1b2a
     death_fill: int = 0xff0000
     if PI:
         ghost_color: int = 0x040404
@@ -54,8 +55,8 @@ class Palette:
 
 
 default_palette = Palette()
-beginner_palette = Palette(0x49a4f9,0x193b0a, 0x61ff1c)
-moonlight_palette = Palette(0xf2ec3a, 0x2c2c6a, 0xff4e88)
+beginner_palette = Palette(0x49a4f9,0x193b0a, 0x61ff1c, 0x091622)
+moonlight_palette = Palette(0xf2ec3a, 0x2c2c6a, 0xff4e88, 0x1b1a07)
 pollution_palette = Palette(0x82a78c, 0x273123, 0x9affb5)
 ice_palette = Palette(0x9af4ff, 0x0090d3, 0xffffff)
 meadow_palette = Palette(0x5096ff, 0x5da93c)
@@ -630,6 +631,9 @@ class Piece(GameObject):
         self.drop_row_count = 0
         self.movable = True
         self.hard_dropped = False
+        self.hard_drop_start = 0
+        self.hard_drop_height = 0
+        self.hard_drop_x = 0
 
     def reset(self, piece):
         shape_name = piece
@@ -649,8 +653,8 @@ class Piece(GameObject):
         self.drop_row_count = 0
         self.movable = True
         self.hard_dropped = False
-        self.draw_piece(self.ghost_color, add_y=self.get_drop_position())
-        self.draw_piece(self.color)
+        self.draw_piece(self.x, self.y + self.get_drop_position(), self.ghost_color)
+        self.draw_piece(self.x, self.y, self.color)
         if not self.is_valid_position(add_x=0, add_y=0):
             game_scene.begin_fill_state()
             self.add_to_board()
@@ -662,7 +666,7 @@ class Piece(GameObject):
     def update(self):
         if not self.active:
             return
-        if self.movable:
+        while self.movable:
             if input_manager.released_down:
                 self.last_fall_time = time.time()
                 self.drop_row_count = 0
@@ -686,6 +690,7 @@ class Piece(GameObject):
                 self.last_soft_drop_time = time.time()
             if input_manager.pressed_hard_drop:
                 self.hard_drop()
+                break
             # debug, reset the board
             if input_manager.pressed_reset_board:
                 stack.reset()
@@ -699,8 +704,10 @@ class Piece(GameObject):
             elif time.time() - self.last_fall_time > self.fall_frequency:
                 self.last_fall_time = time.time()
                 self.move_vertical()
-        elif self.hard_dropped:
+            break
+        if self.hard_dropped:
             if time.time() > self.last_hard_drop_time + PAUSE_AFTER_HARD_DROP_TIME:
+                self.draw_hard_drop(0)
                 self.add_to_board()
 
     def rotate(self, direction):
@@ -709,9 +716,9 @@ class Piece(GameObject):
         self.rotation = (self.rotation + direction) % len(self.shape)
         if not self.is_valid_position():
             self.rotation = (self.rotation - direction) % len(self.shape)
-            self.draw_piece(self.color)
-        self.draw_piece(self.ghost_color, add_y=self.get_drop_position())
-        self.draw_piece(self.color)
+            self.draw_piece(self.x, self.y, self.color)
+        self.draw_piece(self.x, self.y + self.get_drop_position(), self.ghost_color)
+        self.draw_piece(self.x, self.y, self.color)
 
     def speed_up(self):
         if self.fall_frequency > 0.216:
@@ -725,7 +732,7 @@ class Piece(GameObject):
         else:
             self.clear_piece()
             self.y += 1
-            self.draw_piece(self.color)
+            self.draw_piece(self.x, self.y, self.color)
 
     def move_horizontal(self, x):
         if self.is_valid_position(add_x=x):
@@ -733,8 +740,8 @@ class Piece(GameObject):
             self.clear_piece()
             self.x += x
             self.last_run_time = time.time()
-            self.draw_piece(self.ghost_color, add_y=self.get_drop_position())
-            self.draw_piece(self.color)
+            self.draw_piece(self.x, self.y + self.get_drop_position(), self.ghost_color)
+            self.draw_piece(self.x, self.y, self.color)
         else:
             self.run_init_time = 0
             self.last_run_time = 0
@@ -751,14 +758,14 @@ class Piece(GameObject):
             if not self.is_valid_position(add_y=1):
                 self.last_soft_drop_time = time.time() + (self.press_down_frequency * 5)
 
-    def draw_piece(self, color, add_x=0, add_y=0):
+    def draw_piece(self, piece_x, piece_y, color):
         for x in range(self.template_width):
             for y in range(self.template_height):
                 if self.shape[self.rotation][y][x] == blank:
                     continue
-                if y + self.y + add_y < 0:
+                if y + piece_y < 0:
                     continue
-                neopixel_screen.set_cell(x + self.x + add_x, y + self.y + add_y, color)
+                neopixel_screen.set_cell(x + piece_x, y + piece_y, color)
 
     def clear_piece(self, add_x=0, add_y=0):
         for x in range(self.template_width):
@@ -773,13 +780,23 @@ class Piece(GameObject):
         if not self.is_valid_position(add_y=1):
             return
         self.clear_piece()
-        row_count = self.get_drop_position()
-        self.y += row_count
-        self.drop_row_count = row_count << 1
+        self.hard_drop_start = self.y
+        self.hard_drop_height = self.get_drop_position()
+        self.hard_drop_x = self.x
+        self.draw_hard_drop(game_scene.current_palette.drop_color)
+        self.y += self.hard_drop_height
+        self.drop_row_count = self.hard_drop_height << 1
         self.movable = False
         self.hard_dropped = True
         self.last_hard_drop_time = time.time()
-        self.draw_piece(self.color)
+        self.draw_piece(self.x, self.y, self.color)
+
+    def draw_hard_drop(self, color):
+        for y in range(self.hard_drop_height):
+            self.draw_piece(self.hard_drop_x, self.hard_drop_start + y, color)
+
+    def clear_hard_drop(self):
+        pass
 
     def get_drop_position(self):
         for i in range(1, stack.height - self.y):
@@ -845,7 +862,7 @@ class LineFlasher:
         self.progress = 0
         self.num_step = 4
         self.last_step_time = 0
-        self.clean_frequency = 0.00
+        self.clean_frequency = 0.05
         self.flash_color = game_scene.current_palette.flash_color
 
     def enter(self, target_list):
@@ -1185,7 +1202,7 @@ class GameScene(Scene):
         self.score = 0
         self.total_line_cleared = 0
         self.level = 0
-        self.current_palette = palettes[0]
+        self.change_palette()
         stack.change_color()
         self.next_piece = None
         self.pick_next_piece()
@@ -1211,7 +1228,7 @@ class GameScene(Scene):
                 self.active = True
                 neopixel_screen.fill(0)
                 stack.draw_stack()
-                falling_piece.draw_piece(falling_piece.ghost_color, add_y=falling_piece.get_drop_position())
+                falling_piece.draw_piece(falling_piece.x, falling_piece.y + falling_piece.get_drop_position(), falling_piece.ghost_color)
         if input_manager.pressed_quit:
             terminate()
 
