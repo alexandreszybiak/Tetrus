@@ -57,8 +57,8 @@ class Palette:
 default_palette = Palette()
 beginner_palette = Palette(0x49a4f9,0x193b0a, 0x61ff1c, 0x091622)
 moonlight_palette = Palette(0xf2ec3a, 0x2c2c6a, 0xff4e88, 0x1b1a07)
-pollution_palette = Palette(0x82a78c, 0x273123, 0x9affb5)
-ice_palette = Palette(0x9af4ff, 0x0090d3, 0xffffff)
+pollution_palette = Palette(0x82a78c, 0x3e3f3e, 0x9affb5, 0x11160f)
+ice_palette = Palette(0xcbf9ff, 0x0090d3, 0xffffff, 0x001722)
 meadow_palette = Palette(0x5096ff, 0x5da93c)
 bubble_palette = Palette(0xfff840, 0xf33087, 0xfffcae)
 spring_palette = Palette(0x76d90b, 0xe65987, 0xffdcb2)
@@ -66,23 +66,24 @@ autumn_palette = Palette(0x5f991c, 0x883e25)
 grey_palette = Palette(0x6d7e74, 0x545e57)
 night_palette = Palette(0x0c43e5, 0x092883, 0x056fff)
 joker_palette = Palette(0x42ec0e, 0xb500cb, 0xfff955)
-lava_palette = Palette(0xc5080c, 0x2a2727, 0x86281b)
+lava_palette = Palette(0xc5080c, 0x2a2727, 0xcf4b3d, 0x230202)
 organic_palette = Palette(0x37946e, 0x524b24, 0xffd800)
 witch_palette = Palette(0x4730f3, 0x5c0d3c, 0xf33087)
 america_palette = Palette(0xea1f1f, 0x1f29ea, 0xffffff)
 magic_palette = Palette(0xe65987, 0x0b3248, 0x91ea1f)
+toy_palette = Palette(0x5cbb92, 0xa22e51, 0xfbea8b, 0x0f1c15)
 
 palettes = [
-    beginner_palette,
-    moonlight_palette,
-    spring_palette,
+    toy_palette,
     ice_palette,
     pollution_palette,
+    lava_palette,
+    beginner_palette,
+    moonlight_palette,
     magic_palette,
     witch_palette,
     bubble_palette,
     night_palette,
-    lava_palette,
     joker_palette,
     america_palette
 ]
@@ -657,7 +658,7 @@ class Piece(GameObject):
         self.draw_piece(self.x, self.y, self.color)
         if not self.is_valid_position(add_x=0, add_y=0):
             game_scene.begin_fill_state()
-            self.add_to_board()
+            #self.add_to_board()
             self.visible = True
         input_manager.pressing_down = False
         # input_manager.pressing_left = False
@@ -1255,6 +1256,9 @@ class GameScene(Scene):
         self.state = state_wait
         falling_piece.visible = False
         luma_screen.visible = False
+
+    def begin_death_state(self):
+        pass
 
     def begin_fill_state(self):
         self.board_filler.reset()
