@@ -46,7 +46,7 @@ class Palette:
     piece_color: int = 0xff7c6b
     stack_color: int = 0x989898
     flash_color: int = 0xffffff
-    drop_color: int = 0x0b1b2a
+    drop_color: tuple = (15, 28, 21)
     death_fill: int = 0xff0000
     if PI:
         ghost_color: int = 0x040404
@@ -55,10 +55,10 @@ class Palette:
 
 
 default_palette = Palette()
-beginner_palette = Palette(0x49a4f9,0x193b0a, 0x61ff1c, 0x091622)
-moonlight_palette = Palette(0xf2ec3a, 0x2c2c6a, 0xff4e88, 0x1b1a07)
-pollution_palette = Palette(0x82a78c, 0x3e3f3e, 0x9affb5, 0x11160f)
-ice_palette = Palette(0xcbf9ff, 0x0090d3, 0xffffff, 0x001722)
+beginner_palette = Palette(0x49a4f9,0x193b0a, 0x61ff1c, (15, 28, 21))
+moonlight_palette = Palette(0xf2ec3a, 0x2c2c6a, 0xff4e88, (15, 28, 21))
+pollution_palette = Palette(0x82a78c, 0x3e3f3e, 0x9affb5, (15, 28, 21))
+ice_palette = Palette(0xcbf9ff, 0x0090d3, 0xffffff, (15, 28, 21))
 meadow_palette = Palette(0x5096ff, 0x5da93c)
 bubble_palette = Palette(0xfff840, 0xf33087, 0xfffcae)
 spring_palette = Palette(0x76d90b, 0xe65987, 0xffdcb2)
@@ -66,12 +66,12 @@ autumn_palette = Palette(0x5f991c, 0x883e25)
 grey_palette = Palette(0x6d7e74, 0x545e57)
 night_palette = Palette(0x0c43e5, 0x092883, 0x056fff)
 joker_palette = Palette(0x42ec0e, 0xb500cb, 0xfff955)
-lava_palette = Palette(0xc5080c, 0x2a2727, 0xcf4b3d, 0x230202)
+lava_palette = Palette(0xc5080c, 0x2a2727, 0xcf4b3d, (15, 28, 21))
 organic_palette = Palette(0x37946e, 0x524b24, 0xffd800)
 witch_palette = Palette(0x4730f3, 0x5c0d3c, 0xf33087)
 america_palette = Palette(0xea1f1f, 0x1f29ea, 0xffffff)
 magic_palette = Palette(0xe65987, 0x0b3248, 0x91ea1f)
-toy_palette = Palette(0x5cbb92, 0xa22e51, 0xfbea8b, 0x0f1c15)
+toy_palette = Palette(0x5cbb92, 0xa22e51, 0xfbea8b, (15, 28, 21))
 
 palettes = [
     toy_palette,
@@ -708,7 +708,7 @@ class Piece(GameObject):
             break
         if self.hard_dropped:
             if time.time() > self.last_hard_drop_time + PAUSE_AFTER_HARD_DROP_TIME:
-                self.draw_hard_drop(0)
+                self.draw_hard_drop((0, 0, 0))
                 self.add_to_board()
 
     def rotate(self, direction):
@@ -794,7 +794,9 @@ class Piece(GameObject):
 
     def draw_hard_drop(self, color):
         for y in range(self.hard_drop_height):
-            self.draw_piece(self.hard_drop_x, self.hard_drop_start + y, color)
+            color_multiplier = y / self.hard_drop_height
+            new_color = (color[0] * color_multiplier, color[1] * color_multiplier, color[2] * color_multiplier)
+            self.draw_piece(self.hard_drop_x, self.hard_drop_start + y, new_color)
 
     def clear_hard_drop(self):
         pass
