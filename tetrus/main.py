@@ -569,7 +569,7 @@ class LumaScreenPrototype:
 
 class LumaScreen(LumaScreenPrototype):
     @staticmethod
-    def draw_point(x, y, surface):
+    def draw_point(x, y, color, surface):
         surface.point((x, y), fill="white")
 
     def refresh(self):
