@@ -1380,4 +1380,5 @@ while True:
     luma_screen.refresh()
     neopixel_screen.refresh()
 
+    print(clock.get_fps())
     clock.tick(30)
