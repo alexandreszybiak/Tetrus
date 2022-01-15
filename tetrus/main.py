@@ -1,6 +1,9 @@
 from dataclasses import dataclass
+import platform
 
 PI = True
+if platform.system() == "Windows":
+    PI = False
 
 # Constant
 mask = bytearray([1, 2, 4, 8, 16, 32, 64, 128])
@@ -12,6 +15,7 @@ BOARD_HEIGHT = 20
 # Gameplay constants
 PAUSE_AFTER_HARD_DROP_TIME = 0.1
 PAUSE_BETWEEN_LINE_CLEAR_STEPS = 0.03
+INVALID_ROTATION_FEEDBACK_DURATION = 0.06
 
 # Gamepad Constants
 JKEY_X = 3
@@ -629,6 +633,7 @@ class Piece(GameObject):
         self.last_run_time = time.time()
         self.last_hard_drop_time = time.time()
         self.run_init_time = time.time()
+        self.last_invalid_rotation_time = time.time()
         self.drop_row_count = 0
         self.movable = True
         self.hard_dropped = False
@@ -649,6 +654,7 @@ class Piece(GameObject):
         self.last_run_time = time.time()
         self.run_init_time = time.time()
         self.last_hard_drop_time = time.time()
+        self.last_invalid_rotation_time = time.time()
         self.visible = True
         self.active = True
         self.drop_row_count = 0
@@ -705,6 +711,10 @@ class Piece(GameObject):
             elif time.time() - self.last_fall_time > self.fall_frequency:
                 self.last_fall_time = time.time()
                 self.move_vertical()
+            if time.time() - self.last_invalid_rotation_time > INVALID_ROTATION_FEEDBACK_DURATION:
+                self.last_invalid_rotation_time = time.time()
+                self.color = game_scene.current_palette.piece_color
+                self.draw_piece(self.x, self.y, self.color)
             break
         if self.hard_dropped:
             if time.time() > self.last_hard_drop_time + PAUSE_AFTER_HARD_DROP_TIME:
@@ -717,6 +727,8 @@ class Piece(GameObject):
         self.rotation = (self.rotation + direction) % len(self.shape)
         if not self.is_valid_position():
             self.rotation = (self.rotation - direction) % len(self.shape)
+            self.color = game_scene.current_palette.flash_color
+            self.last_invalid_rotation_time = time.time()
             self.draw_piece(self.x, self.y, self.color)
         self.draw_piece(self.x, self.y + self.get_drop_position(), self.ghost_color)
         self.draw_piece(self.x, self.y, self.color)
@@ -1381,5 +1393,4 @@ while True:
     luma_screen.refresh()
     neopixel_screen.refresh()
 
-    print(clock.get_fps())
     clock.tick(30)
