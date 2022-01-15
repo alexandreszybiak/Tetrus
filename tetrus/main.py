@@ -843,11 +843,12 @@ class BoardFiller:
         self.end_fill_time = 0
         self.last_fill_time = 0
         self.fill_frequency = 0.05
-        self.color = game_scene.current_palette.death_fill
+        self.color = game_scene.current_palette.piece_color
 
     def reset(self):
         self.last_fill_time = time.time()
         self.line_to_fill = 20
+        self.color = game_scene.current_palette.piece_color
 
     def update(self):
         if self.line_to_fill == 0 and time.time() - self.end_fill_time > self.pause_before_reset_duration:
