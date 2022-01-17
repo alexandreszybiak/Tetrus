@@ -1,5 +1,21 @@
 from dataclasses import dataclass
-import platform
+import platform, pickle, os
+
+highscore = 0
+
+HIGHSCORE_FILENAME = "hs_tetris.p"
+
+print('python path = ' + os.environ['PYTHONPATH'])
+
+try:
+    highscore = pickle.load(open(HIGHSCORE_FILENAME, "rb"))
+except OSError:
+    highscore = 0
+    print("file does not exist")
+except EOFError:
+    highscore = 0
+
+print('highscore = ' + str(highscore))
 
 PI = True
 if platform.system() == "Windows":
@@ -100,7 +116,7 @@ SIMULATOR_BACKGROUND = (15, 15, 15)
 # Constant for empty cell
 blank = '.'
 
-import random, time, sys, os, pickle
+import random, time, os, pickle
 from enum import Enum
 import pygame
 from pygame.locals import *
@@ -113,8 +129,6 @@ if PI:
     from luma.core.interface.serial import spi, noop
     from luma.core.render import canvas
     from luma.core.virtual import viewport
-    from luma.core.legacy import text, show_message
-    from luma.core.legacy.font import proportional, CP437_FONT, TINY_FONT, SINCLAIR_FONT, LCD_FONT
 
 
 class ShapeTemplates(Enum):
@@ -664,7 +678,8 @@ class Piece(GameObject):
         self.draw_piece(self.x, self.y, self.color)
         if not self.is_valid_position(add_x=0, add_y=0):
             game_scene.begin_fill_state()
-            #self.add_to_board()
+            if game_scene.score > highscore:
+                pickle.dump(game_scene.score, open(HIGHSCORE_FILENAME, "wb"))
             self.visible = True
         input_manager.pressing_down = False
         # input_manager.pressing_left = False
