@@ -3,7 +3,7 @@ import platform, pickle, os
 
 highscore = 0
 
-HIGHSCORE_FILENAME = "hs_tetris.p"
+HIGHSCORE_FILENAME = "hs_tetrus.p"
 
 print('python path = ' + os.environ['PYTHONPATH'])
 
