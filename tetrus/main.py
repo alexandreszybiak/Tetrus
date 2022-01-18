@@ -1,11 +1,16 @@
 from dataclasses import dataclass
 import platform, pickle, os
 
+PI = True
+if platform.system() == "Windows":
+    PI = False
+
 highscore = 0
 
-HIGHSCORE_FILENAME = "hs_tetrus.p"
-
-print('python path = ' + os.environ['PYTHONPATH'])
+if PI:
+    HIGHSCORE_FILENAME = "/home/pi/tetrus_highscore.p"
+else:
+    HIGHSCORE_FILENAME = "tetrus_highscore.p"
 
 try:
     highscore = pickle.load(open(HIGHSCORE_FILENAME, "rb"))
@@ -16,10 +21,6 @@ except EOFError:
     highscore = 0
 
 print('highscore = ' + str(highscore))
-
-PI = True
-if platform.system() == "Windows":
-    PI = False
 
 # Constant
 mask = bytearray([1, 2, 4, 8, 16, 32, 64, 128])
