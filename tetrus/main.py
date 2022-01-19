@@ -583,7 +583,7 @@ class LumaScreenPrototype:
     def fill(self, color):
         pass
 
-    def draw_text(self, text, x, y, surface):
+    def draw_text(self, txt, x, y, surface):
         pass
 
     def refresh(self):
@@ -595,9 +595,9 @@ class LumaScreen(LumaScreenPrototype):
     def draw_point(x, y, color, surface):
         surface.point((x, y), fill="white")
 
-    def draw_text(self, text, x, y, surface):
-        print(text)
-        print(str(type(text)))
+    def draw_text(self, txt, x, y, surface):
+        print(txt)
+        print(str(type(txt)))
         text(surface, (x, y), "coucou", fill="white")
 
     def refresh(self):
