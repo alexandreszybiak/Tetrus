@@ -129,6 +129,7 @@ if PI:
     from luma.led_matrix.device import max7219
     from luma.core.interface.serial import spi, noop
     from luma.core.render import canvas
+    from luma.core.legacy import text
     from luma.core.virtual import viewport
 
 
@@ -582,6 +583,9 @@ class LumaScreenPrototype:
     def fill(self, color):
         pass
 
+    def draw_text(self, text, x, y, surface):
+        pass
+
     def refresh(self):
         pass
 
@@ -590,6 +594,9 @@ class LumaScreen(LumaScreenPrototype):
     @staticmethod
     def draw_point(x, y, color, surface):
         surface.point((x, y), fill="white")
+
+    def draw_text(self, text, x, y, surface):
+        text(surface, (x, y), text, fill="white")
 
     def refresh(self):
         if self.need_redraw:
@@ -1149,6 +1156,7 @@ class MenuInfoPanel(LumaScreenChild):
                     self.parent_device.draw_point(offset_x + x, offset_y + y, LUMA_COLOR_ON, surface)
 
     def draw(self, surface):
+        self.parent_device.draw_text(str(highscore),0,0,surface)
         _score = menu_scene.last_score
 
         if _score == 0:
