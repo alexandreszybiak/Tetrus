@@ -76,7 +76,7 @@ class Palette:
 
 
 default_palette = Palette()
-beginner_palette = Palette(0x49a4f9,0x193b0a, 0x61ff1c, (15, 28, 21))
+beginner_palette = Palette(0x49a4f9, 0x193b0a, 0x61ff1c, (15, 28, 21))
 moonlight_palette = Palette(0xf2ec3a, 0x2c2c6a, 0xff4e88, (15, 28, 21))
 pollution_palette = Palette(0x82a78c, 0x3e3f3e, 0x9affb5, (15, 28, 21))
 ice_palette = Palette(0xcbf9ff, 0x0090d3, 0xffffff, (15, 28, 21))
@@ -596,7 +596,9 @@ class LumaScreen(LumaScreenPrototype):
         surface.point((x, y), fill="white")
 
     def draw_text(self, text, x, y, surface):
-        text(surface, (x, y), text, fill="white")
+        print(text)
+        print(str(type(text)))
+        text(surface, (x, y), "coucou", fill="white")
 
     def refresh(self):
         if self.need_redraw:
@@ -1156,7 +1158,8 @@ class MenuInfoPanel(LumaScreenChild):
                     self.parent_device.draw_point(offset_x + x, offset_y + y, LUMA_COLOR_ON, surface)
 
     def draw(self, surface):
-        self.parent_device.draw_text(str(highscore),0,0,surface)
+        self.parent_device.draw_text(str(highscore), 0, 0, surface)
+        return
         _score = menu_scene.last_score
 
         if _score == 0:
@@ -1268,7 +1271,8 @@ class GameScene(Scene):
                 self.active = True
                 neopixel_screen.fill(0)
                 stack.draw_stack()
-                falling_piece.draw_piece(falling_piece.x, falling_piece.y + falling_piece.get_drop_position(), falling_piece.ghost_color)
+                falling_piece.draw_piece(falling_piece.x, falling_piece.y + falling_piece.get_drop_position(),
+                                         falling_piece.ghost_color)
         if input_manager.pressed_quit:
             terminate()
 
