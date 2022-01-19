@@ -130,6 +130,7 @@ if PI:
     from luma.core.interface.serial import spi, noop
     from luma.core.render import canvas
     from luma.core.legacy import text
+    from luma.core.legacy.font import CP437_FONT, TINY_FONT, SINCLAIR_FONT, LCD_FONT
     from luma.core.virtual import viewport
 
 
@@ -596,9 +597,7 @@ class LumaScreen(LumaScreenPrototype):
         surface.point((x, y), fill="white")
 
     def draw_text(self, txt, x, y, surface):
-        print(txt)
-        print(str(type(txt)))
-        text(surface, (x, y), "coucou", fill="white")
+        text(surface, (x, y), txt, fill="white", font=TINY_FONT)
 
     def refresh(self):
         if self.need_redraw:
