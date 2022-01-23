@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 import platform, pickle, os
 
+import main
+
 PI = True
 if platform.system() == "Windows":
     PI = False
@@ -132,6 +134,8 @@ if PI:
     from luma.core.legacy import text
     from luma.core.legacy.font import CP437_FONT, TINY_FONT, SINCLAIR_FONT, LCD_FONT
     from luma.core.virtual import viewport
+else:
+    from font import LCD_FONT, SEG7_FONT, TINY_FONT
 
 
 class ShapeTemplates(Enum):
@@ -584,8 +588,18 @@ class LumaScreenPrototype:
     def fill(self, color):
         pass
 
-    def draw_text(self, txt, x, y, surface):
-        pass
+    def draw_text(self, txt, x, y, surface, font=None, left_to_right=True):
+        font = TINY_FONT
+        if not left_to_right:
+            txt_width = len([c for ascii_code in txt for c in font[ord(ascii_code)]])
+            x -= txt_width
+        for ch in txt:
+            for byte in font[ord(ch)]:
+                for j in range(8):
+                    if byte & 0x01 > 0:
+                        self.draw_point(x, y + j, LUMA_COLOR_ON, surface)
+                    byte >>= 1
+                x += 1
 
     def refresh(self):
         pass
@@ -595,9 +609,6 @@ class LumaScreen(LumaScreenPrototype):
     @staticmethod
     def draw_point(x, y, color, surface):
         surface.point((x, y), fill="white")
-
-    def draw_text(self, txt, x, y, surface):
-        text(surface, (x, y), txt, fill="white", font=TINY_FONT)
 
     def refresh(self):
         if self.need_redraw:
@@ -689,6 +700,7 @@ class Piece(GameObject):
             game_scene.begin_fill_state()
             if game_scene.score > highscore:
                 pickle.dump(game_scene.score, open(HIGHSCORE_FILENAME, "wb"))
+                main.highscore = game_scene.score
             self.visible = True
         input_manager.pressing_down = False
         # input_manager.pressing_left = False
@@ -1125,10 +1137,7 @@ class Hud(LumaScreenChild):
                     self.parent_device.draw_point(offset_x + x, offset_y + y, LUMA_COLOR_ON, surface)
 
     def draw_score(self, number, offset_x, offset_y, surface):
-        for x in range(0, 3):
-            for y in range(0, 5):
-                if number_font[3 * number + x] & mask[y]:
-                    self.parent_device.draw_point(offset_x + x, offset_y + y, LUMA_COLOR_ON, surface)
+        self.parent_device.draw_text(str(game_scene.score), 33, -1, surface, left_to_right=False)
 
     def draw_lines(self, number, offset_x, offset_y, surface):
         for i in range(0, number % 10):
@@ -1157,17 +1166,7 @@ class MenuInfoPanel(LumaScreenChild):
                     self.parent_device.draw_point(offset_x + x, offset_y + y, LUMA_COLOR_ON, surface)
 
     def draw(self, surface):
-        self.parent_device.draw_text(str(highscore), 0, 0, surface)
-        return
-        _score = menu_scene.last_score
-
-        if _score == 0:
-            return
-
-        # draw score
-        for i in range(0, 6):
-            self.draw_score(_score % 10, 29 - i * 4, 0, surface)
-            _score //= 10
+        self.parent_device.draw_text(str(highscore), 33, 0, surface, left_to_right=False)
 
 
 class Scene:
