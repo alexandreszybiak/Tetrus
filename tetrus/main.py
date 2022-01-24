@@ -635,12 +635,13 @@ class LumaScreenSimulator(LumaScreenPrototype):
         if self.need_redraw:
             self.fill(0)
             self.child.draw(application_surface)
+            pygame.display.update()
             self.need_redraw = False
 
 
 class LumaScreenChild:
     def __init__(self):
-        self.parent_device = luma_screen
+        self.parent_device: LumaScreenPrototype = luma_screen
 
     def draw(self, surface):
         pass
@@ -1158,15 +1159,56 @@ class Hud(LumaScreenChild):
         self.draw_lines(game_scene.total_line_cleared, 0, 0, surface)
 
 
+class LumaSequence(LumaScreenChild):
+    def __init__(self, duration):
+        super().__init__()
+        self.duration = duration
+        self.start_time = time.time()
+
+    def start(self):
+        self.start_time = time.time()
+        self.parent_device.need_redraw = True
+
+    def update(self):
+        pass
+
+
+class ConnectGamepadSequence(LumaSequence):
+    def draw(self, surface):
+        self.parent_device.draw_text("Gamepad", 0, 0, surface)
+
+
+class HighscoreSequence(LumaSequence):
+    def draw(self, surface):
+        self.parent_device.draw_text("Highscore", 0, 0, surface)
+
+
 class MenuInfoPanel(LumaScreenChild):
+    def __init__(self):
+        super().__init__()
+        connect_gamepad_sequence = ConnectGamepadSequence(1)
+        highscore_sequence = HighscoreSequence(2)
+        self.children = [connect_gamepad_sequence, highscore_sequence]
+        self.current_child_index = 0
+
     def draw_score(self, number, offset_x, offset_y, surface):
         for x in range(0, 3):
             for y in range(0, 5):
                 if number_font[3 * number + x] & mask[y]:
                     self.parent_device.draw_point(offset_x + x, offset_y + y, LUMA_COLOR_ON, surface)
 
+    def update(self):
+        sequence: LumaSequence = self.children[self.current_child_index]
+        if time.time() - sequence.start_time > sequence.duration:
+            self.current_child_index += 1
+            if self.current_child_index >= len(self.children):
+                self.current_child_index = 0
+            next_sequence: LumaSequence = self.children[self.current_child_index]
+            next_sequence.start()
+
     def draw(self, surface):
-        self.parent_device.draw_text(str(highscore), 33, 0, surface, left_to_right=False)
+        sequence: LumaSequence = self.children[self.current_child_index]
+        sequence.draw(surface)
 
 
 class Scene:
@@ -1207,6 +1249,7 @@ class MenuScene(Scene):
             scene_manager.change_scene(game_scene)
         if input_manager.pressed_quit:
             terminate()
+        menu_info_panel.update()
 
     @staticmethod
     def draw_title(color):
