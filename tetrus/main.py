@@ -281,6 +281,7 @@ number_font = [
     0x17, 0x15, 0x1F]
 
 pause_icon = [0x1f, 0x00, 0x00, 0x1f]
+cup_icon = [3, 23, 31, 23, 3]
 
 t_letter = [0x01, 0x1f, 0x01]
 e_letter = [0x1f, 0x15, 0x11]
@@ -587,6 +588,14 @@ class LumaScreenPrototype:
 
     def fill(self, color):
         pass
+
+    def draw_icon(self, sprite, x, y, surface):
+        for byte in sprite:
+            for j in range(8):
+                if byte & 0x01 > 0:
+                    self.draw_point(x, y + j, LUMA_COLOR_ON, surface)
+                byte >>= 1
+            x += 1
 
     def draw_text(self, txt, x, y, surface, font=None, left_to_right=True):
         font = TINY_FONT
@@ -1175,19 +1184,20 @@ class LumaSequence(LumaScreenChild):
 
 class ConnectGamepadSequence(LumaSequence):
     def draw(self, surface):
-        self.parent_device.draw_text("Gamepad", 0, 0, surface)
+        self.parent_device.draw_text("Connect", 0, 0, surface)
 
 
 class HighscoreSequence(LumaSequence):
     def draw(self, surface):
-        self.parent_device.draw_text("Highscore", 0, 0, surface)
+        self.parent_device.draw_icon(cup_icon, 0, 0, surface)
+        self.parent_device.draw_text(str(highscore), 33, -1, surface, left_to_right=False)
 
 
 class MenuInfoPanel(LumaScreenChild):
     def __init__(self):
         super().__init__()
-        connect_gamepad_sequence = ConnectGamepadSequence(1)
-        highscore_sequence = HighscoreSequence(2)
+        connect_gamepad_sequence = ConnectGamepadSequence(3)
+        highscore_sequence = HighscoreSequence(3)
         self.children = [connect_gamepad_sequence, highscore_sequence]
         self.current_child_index = 0
 
