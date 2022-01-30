@@ -22,7 +22,7 @@ else:
 
 # Gameplay constants
 PAUSE_AFTER_HARD_DROP_TIME = 0.1
-PAUSE_BETWEEN_LINE_CLEAR_STEPS = 0.06  # 1 frame = 0.03
+PAUSE_BETWEEN_LINE_CLEAR_STEPS = 0.03  # 1 frame = 0.03
 INVALID_ROTATION_FEEDBACK_DURATION = 0.06
 
 highscore = 0
@@ -979,6 +979,7 @@ class LineCleaner:
                     stack.draw_stack()
                     falling_piece.speed_up()
                 game_scene.begin_fall_state()
+                luma_screen.need_redraw = True
             else:
                 for y in self.target_list:
                     blank_pos = self.progress - 1
@@ -995,10 +996,10 @@ class LineCleaner:
                 self.last_clean_time = time.time()
                 if self.progress < len(self.target_list):
                     game_scene.total_line_cleared += 1
-                    luma_screen.need_redraw = True
+                    #luma_screen.need_redraw = True
                 if self.progress < 5:
                     game_scene.score += self.points_to_give
-                    luma_screen.need_redraw = True
+                    #luma_screen.need_redraw = True
             self.progress += 1
 
     def collapse_gaps(self):
