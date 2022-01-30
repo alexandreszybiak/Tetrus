@@ -1,11 +1,29 @@
 from dataclasses import dataclass
-import platform, pickle, os
-
+import platform, random, time, pickle, pygame
 import main
+from enum import Enum
+from pygame.locals import *
 
 PI = True
 if platform.system() == "Windows":
     PI = False
+
+if PI:
+    import board
+    import neopixel
+    import subprocess
+    from luma.led_matrix.device import max7219
+    from luma.core.interface.serial import spi, noop
+    from luma.core.render import canvas
+    from luma.core.legacy.font import TINY_FONT
+    from luma.core.virtual import viewport
+else:
+    from font import LCD_FONT, SEG7_FONT, TINY_FONT
+
+# Gameplay constants
+PAUSE_AFTER_HARD_DROP_TIME = 0.1
+PAUSE_BETWEEN_LINE_CLEAR_STEPS = 0.06  # 1 frame = 0.03
+INVALID_ROTATION_FEEDBACK_DURATION = 0.06
 
 highscore = 0
 
@@ -30,11 +48,6 @@ mask = bytearray([1, 2, 4, 8, 16, 32, 64, 128])
 # Game Constants
 BOARD_WIDTH = 10
 BOARD_HEIGHT = 20
-
-# Gameplay constants
-PAUSE_AFTER_HARD_DROP_TIME = 0.1
-PAUSE_BETWEEN_LINE_CLEAR_STEPS = 0.03
-INVALID_ROTATION_FEEDBACK_DURATION = 0.06
 
 # Gamepad Constants
 JKEY_X = 3
@@ -118,25 +131,6 @@ SIMULATOR_BACKGROUND = (15, 15, 15)
 
 # Constant for empty cell
 blank = '.'
-
-import random, time, os, pickle
-from enum import Enum
-import pygame
-from pygame.locals import *
-
-if PI:
-    import board
-    import neopixel
-    import subprocess
-    from luma.led_matrix.device import max7219
-    from luma.core.interface.serial import spi, noop
-    from luma.core.render import canvas
-    from luma.core.legacy import text
-    from luma.core.legacy.font import CP437_FONT, TINY_FONT, SINCLAIR_FONT, LCD_FONT
-    from luma.core.virtual import viewport
-else:
-    from font import LCD_FONT, SEG7_FONT, TINY_FONT
-
 
 class ShapeTemplates(Enum):
     S = [['.....',
