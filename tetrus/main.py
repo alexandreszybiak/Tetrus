@@ -132,6 +132,7 @@ SIMULATOR_BACKGROUND = (15, 15, 15)
 # Constant for empty cell
 blank = '.'
 
+
 class ShapeTemplates(Enum):
     S = [['.....',
           '.....',
@@ -276,6 +277,11 @@ number_font = [
 
 pause_icon = [0x1f, 0x00, 0x00, 0x1f]
 cup_icon = [3, 23, 31, 23, 3]
+bluetooth_icon = [66, 36, 255, 90, 36]
+gamepad_icon = [
+    [124, 130, 137, 157, 73, 65, 65, 65, 65, 73, 149, 137, 130, 124],
+    [124, 130, 137, 157, 73, 65, 65, 73, 65, 73, 149, 137, 130, 124]
+]
 
 t_letter = [0x01, 0x1f, 0x01]
 e_letter = [0x1f, 0x15, 0x11]
@@ -996,10 +1002,10 @@ class LineCleaner:
                 self.last_clean_time = time.time()
                 if self.progress < len(self.target_list):
                     game_scene.total_line_cleared += 1
-                    #luma_screen.need_redraw = True
+                    # luma_screen.need_redraw = True
                 if self.progress < 5:
                     game_scene.score += self.points_to_give
-                    #luma_screen.need_redraw = True
+                    # luma_screen.need_redraw = True
             self.progress += 1
 
     def collapse_gaps(self):
@@ -1173,13 +1179,52 @@ class LumaSequence(LumaScreenChild):
         self.start_time = time.time()
         self.parent_device.need_redraw = True
 
+    def end(self):
+        menu_info_panel.load_next()
+
     def update(self):
-        pass
+        if time.time() - self.start_time > self.duration:
+            self.end()
 
 
 class ConnectGamepadSequence(LumaSequence):
+    def __init__(self, duration, loop):
+        super().__init__(duration)
+        self.gamepad_last_frame_time = time.time()
+        self.gamepad_frame_duration = duration / 2
+        self.gamepad_current_frame = 0
+        self.loop = loop
+        self.loop_count = 0
+
+    def start(self):
+        super().start()
+        self.gamepad_last_frame_time = time.time()
+        self.gamepad_current_frame = 0
+        self.loop_count = 0
+
+    def end(self):
+        menu_info_panel.load_next()
+
+    def update(self):
+        if time.time() - self.gamepad_last_frame_time > self.gamepad_frame_duration:
+            self.gamepad_current_frame += 1
+            self.parent_device.need_redraw = True
+            self.gamepad_last_frame_time = time.time()
+            if self.gamepad_current_frame == 2:
+                if self.loop == self.loop_count:
+                    self.end()
+                else:
+                    self.gamepad_current_frame = 0
+                    self.loop_count += 1
+
     def draw(self, surface):
-        self.parent_device.draw_text("Connect", 0, 0, surface)
+        self.parent_device.draw_icon(bluetooth_icon, 6, 0, surface)
+        self.parent_device.draw_icon(gamepad_icon[self.gamepad_current_frame], 13, 0, surface)
+
+
+class PressStartSequence(LumaSequence):
+    def draw(self, surface):
+        self.parent_device.draw_text("Start", 0, 0, surface)
 
 
 class HighscoreSequence(LumaSequence):
@@ -1191,25 +1236,25 @@ class HighscoreSequence(LumaSequence):
 class MenuInfoPanel(LumaScreenChild):
     def __init__(self):
         super().__init__()
-        connect_gamepad_sequence = ConnectGamepadSequence(3)
-        highscore_sequence = HighscoreSequence(3)
-        self.children = [connect_gamepad_sequence, highscore_sequence]
+        self.children = boot_sequence
         self.current_child_index = 0
 
-    def draw_score(self, number, offset_x, offset_y, surface):
-        for x in range(0, 3):
-            for y in range(0, 5):
-                if number_font[3 * number + x] & mask[y]:
-                    self.parent_device.draw_point(offset_x + x, offset_y + y, LUMA_COLOR_ON, surface)
+    def load_sequence(self, sequence):
+        self.children = sequence
+        self.current_child_index = 0
+        next_sequence: LumaSequence = self.children[self.current_child_index]
+        next_sequence.start()
 
     def update(self):
         sequence: LumaSequence = self.children[self.current_child_index]
-        if time.time() - sequence.start_time > sequence.duration:
-            self.current_child_index += 1
-            if self.current_child_index >= len(self.children):
-                self.current_child_index = 0
-            next_sequence: LumaSequence = self.children[self.current_child_index]
-            next_sequence.start()
+        sequence.update()
+
+    def load_next(self):
+        self.current_child_index += 1
+        if self.current_child_index >= len(self.children):
+            self.current_child_index = 0
+        next_sequence: LumaSequence = self.children[self.current_child_index]
+        next_sequence.start()
 
     def draw(self, surface):
         sequence: LumaSequence = self.children[self.current_child_index]
@@ -1248,8 +1293,10 @@ class MenuScene(Scene):
     def update(self):
         if input_manager.connected_joystick:
             self.draw_title(default_palette.piece_color)
+            menu_info_panel.load_sequence(ready_sequence)
         elif input_manager.disconnected_joystick:
             self.draw_title(default_palette.ghost_color)
+            menu_info_panel.load_sequence(boot_sequence)
         if input_manager.pressed_pause:
             scene_manager.change_scene(game_scene)
         if input_manager.pressed_quit:
@@ -1440,6 +1487,12 @@ if PI:
 else:
     neopixel_screen = NeoPixelScreenSimulator()
     luma_screen = LumaScreenSimulator()
+
+connect_gamepad_sequence = ConnectGamepadSequence(1, 5)
+highscore_sequence = HighscoreSequence(6)
+press_start_sequence = PressStartSequence(3)
+boot_sequence = [connect_gamepad_sequence, highscore_sequence]
+ready_sequence = [press_start_sequence, highscore_sequence]
 
 menu_info_panel = MenuInfoPanel()
 hud = Hud()
