@@ -26,21 +26,28 @@ PAUSE_BETWEEN_LINE_CLEAR_STEPS = 0.03  # 1 frame = 0.03
 INVALID_ROTATION_FEEDBACK_DURATION = 0.06
 
 highscore = 0
+lastscore = 0
 
 if PI:
     HIGHSCORE_FILENAME = "/home/pi/tetrus_highscore.p"
+    LASTSCORE_FILENAME = "/home/pi/tetrus_lastscore.p"
 else:
     HIGHSCORE_FILENAME = "tetrus_highscore.p"
+    LASTSCORE_FILENAME = "tetrus_lastscore.p"
 
 try:
     highscore = pickle.load(open(HIGHSCORE_FILENAME, "rb"))
 except OSError:
     highscore = 0
-    print("file does not exist")
 except EOFError:
     highscore = 0
 
-print('highscore = ' + str(highscore))
+try:
+    lastscore = pickle.load(open(LASTSCORE_FILENAME, "rb"))
+except OSError:
+    lastscore = 0
+except EOFError:
+    lastscore = 0
 
 # Constant
 mask = bytearray([1, 2, 4, 8, 16, 32, 64, 128])
@@ -277,6 +284,7 @@ number_font = [
 
 pause_icon = [0x1f, 0x00, 0x00, 0x1f]
 cup_icon = [3, 23, 31, 23, 3]
+time_icon = [14, 17, 23, 21, 14]
 bluetooth_icon = [66, 36, 255, 90, 36]
 gamepad_icon = [
     [124, 130, 137, 157, 73, 65, 65, 65, 65, 73, 149, 137, 130, 124],
@@ -708,6 +716,8 @@ class Piece(GameObject):
         self.draw_piece(self.x, self.y, self.color)
         if not self.is_valid_position(add_x=0, add_y=0):
             game_scene.begin_fill_state()
+            pickle.dump(game_scene.score, open(LASTSCORE_FILENAME, "wb"))
+            main.lastscore = game_scene.score
             if game_scene.score > highscore:
                 pickle.dump(game_scene.score, open(HIGHSCORE_FILENAME, "wb"))
                 main.highscore = game_scene.score
@@ -1227,20 +1237,31 @@ class PressStartSequence(ConnectGamepadSequence):
         self.parent_device.draw_icon(gamepad_icon[self.gamepad_current_frame], 9, 0, surface)
 
 
-class HighscoreSequence(LumaSequence):
+class HighScoreSequence(LumaSequence):
     def draw(self, surface):
         self.parent_device.draw_icon(cup_icon, 0, 0, surface)
         self.parent_device.draw_text(str(highscore), 33, -1, surface, left_to_right=False)
 
 
+class LastScoreSequence(LumaSequence):
+    def draw(self, surface):
+        self.parent_device.draw_icon(time_icon, 0, 0, surface)
+        self.parent_device.draw_text(str(lastscore), 33, -1, surface, left_to_right=False)
+
+
 class MenuInfoPanel(LumaScreenChild):
     def __init__(self):
         super().__init__()
-        self.children = boot_sequence
+        self.children = []
         self.current_child_index = 0
 
-    def load_sequence(self, sequence):
-        self.children = sequence
+    def add_child(self, child):
+        self.children.append(child)
+
+    def reset_sequence(self):
+        self.children = []
+
+    def start_sequence(self):
         self.current_child_index = 0
         next_sequence: LumaSequence = self.children[self.current_child_index]
         next_sequence.start()
@@ -1283,6 +1304,16 @@ class MenuScene(Scene):
         luma_screen.need_redraw = True
 
     def enter(self):
+        menu_info_panel.reset_sequence()
+        if input_manager.joystick_is_connected:
+            menu_info_panel.add_child(press_start_sequence)
+        else:
+            menu_info_panel.add_child(connect_gamepad_sequence)
+        if highscore > 0:
+            menu_info_panel.add_child(highscore_sequence)
+        if lastscore > 0:
+            menu_info_panel.add_child(lastscore_sequence)
+        menu_info_panel.start_sequence()
         luma_screen.child = menu_info_panel
         luma_screen.need_redraw = True
         if input_manager.joystick_is_connected:
@@ -1293,10 +1324,22 @@ class MenuScene(Scene):
     def update(self):
         if input_manager.connected_joystick:
             self.draw_title(default_palette.piece_color)
-            menu_info_panel.load_sequence(ready_sequence)
+            menu_info_panel.reset_sequence()
+            menu_info_panel.add_child(press_start_sequence)
+            if highscore > 0:
+                menu_info_panel.add_child(highscore_sequence)
+            if lastscore > 0:
+                menu_info_panel.add_child(lastscore_sequence)
+            menu_info_panel.start_sequence()
         elif input_manager.disconnected_joystick:
             self.draw_title(default_palette.ghost_color)
-            menu_info_panel.load_sequence(boot_sequence)
+            menu_info_panel.reset_sequence()
+            menu_info_panel.add_child(connect_gamepad_sequence)
+            if highscore > 0:
+                menu_info_panel.add_child(highscore_sequence)
+            if lastscore > 0:
+                menu_info_panel.add_child(lastscore_sequence)
+            menu_info_panel.start_sequence()
         if input_manager.pressed_pause:
             scene_manager.change_scene(game_scene)
         if input_manager.pressed_quit:
@@ -1489,10 +1532,9 @@ else:
     luma_screen = LumaScreenSimulator()
 
 connect_gamepad_sequence = ConnectGamepadSequence(1, 5)
-highscore_sequence = HighscoreSequence(6)
+highscore_sequence = HighScoreSequence(6)
+lastscore_sequence = LastScoreSequence(6)
 press_start_sequence = PressStartSequence(1, 5)
-boot_sequence = [connect_gamepad_sequence, highscore_sequence]
-ready_sequence = [press_start_sequence, highscore_sequence]
 
 menu_info_panel = MenuInfoPanel()
 hud = Hud()
