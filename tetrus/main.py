@@ -1222,9 +1222,9 @@ class ConnectGamepadSequence(LumaSequence):
         self.parent_device.draw_icon(gamepad_icon[self.gamepad_current_frame], 13, 0, surface)
 
 
-class PressStartSequence(LumaSequence):
+class PressStartSequence(ConnectGamepadSequence):
     def draw(self, surface):
-        self.parent_device.draw_text("Start", 0, 0, surface)
+        self.parent_device.draw_icon(gamepad_icon[self.gamepad_current_frame], 9, 0, surface)
 
 
 class HighscoreSequence(LumaSequence):
@@ -1490,7 +1490,7 @@ else:
 
 connect_gamepad_sequence = ConnectGamepadSequence(1, 5)
 highscore_sequence = HighscoreSequence(6)
-press_start_sequence = PressStartSequence(3)
+press_start_sequence = PressStartSequence(1, 5)
 boot_sequence = [connect_gamepad_sequence, highscore_sequence]
 ready_sequence = [press_start_sequence, highscore_sequence]
 
