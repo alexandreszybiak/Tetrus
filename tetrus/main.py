@@ -864,7 +864,7 @@ class Piece(GameObject):
         for y in range(self.hard_drop_height):
             color_multiplier = y / self.hard_drop_height
             new_color = (color[0] * color_multiplier, color[1] * color_multiplier, color[2] * color_multiplier)
-            self.draw_piece(self.hard_drop_x, self.hard_drop_start + y, new_color)
+            self.draw_piece(self.hard_drop_x, self.hard_drop_start + y, rgb2int(new_color))
 
     def clear_hard_drop(self):
         pass
@@ -1486,6 +1486,13 @@ def terminate():
     neopixel_screen.refresh()
     pygame.quit()
     exit()
+
+
+def rgb2int(rgb_tuple):
+    color: int = int(rgb_tuple[0])
+    color = (color << 8) + int(rgb_tuple[1])
+    color = (color << 8) + int(rgb_tuple[2])
+    return color
 
 
 # state machine
