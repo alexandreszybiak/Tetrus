@@ -28,6 +28,8 @@ INVALID_ROTATION_FEEDBACK_DURATION = 0.06
 highscore = 0
 lastscore = 0
 
+is_first_game = True
+
 if PI:
     HIGHSCORE_FILENAME = "/home/pi/tetrus_highscore.p"
     LASTSCORE_FILENAME = "/home/pi/tetrus_lastscore.p"
@@ -852,7 +854,7 @@ class Piece(GameObject):
         self.hard_drop_start = self.y
         self.hard_drop_height = self.get_drop_position()
         self.hard_drop_x = self.x
-        self.draw_hard_drop(game_scene.current_palette.drop_color)
+        self.draw_hard_drop(game_scene.current_palette.ghost_color)
         self.y += self.hard_drop_height
         self.drop_row_count = self.hard_drop_height << 1
         self.movable = False
@@ -862,9 +864,9 @@ class Piece(GameObject):
 
     def draw_hard_drop(self, color):
         for y in range(self.hard_drop_height):
-            color_multiplier = y / self.hard_drop_height
-            new_color = (color[0] * color_multiplier, color[1] * color_multiplier, color[2] * color_multiplier)
-            self.draw_piece(self.hard_drop_x, self.hard_drop_start + y, rgb2int(new_color))
+            #color_multiplier = y / self.hard_drop_height
+            #new_color = (color[0] * color_multiplier, color[1] * color_multiplier, color[2] * color_multiplier)
+            self.draw_piece(self.hard_drop_x, self.hard_drop_start + y, color)
 
     def clear_hard_drop(self):
         pass
@@ -920,6 +922,7 @@ class BoardFiller:
 
     def update(self):
         if self.line_to_fill == 0 and time.time() - self.end_fill_time > self.pause_before_reset_duration:
+            main.is_first_game = False
             scene_manager.change_scene(menu_scene)
         elif self.line_to_fill > 0 and time.time() - self.last_fill_time > self.fill_frequency:
             self.line_to_fill -= 1
@@ -1261,8 +1264,10 @@ class MenuInfoPanel(LumaScreenChild):
     def reset_sequence(self):
         self.children = []
 
-    def start_sequence(self):
-        self.current_child_index = 0
+    def start_sequence(self, start_index=0):
+        self.current_child_index = start_index
+        if start_index >= len(self.children):
+            self.current_child_index = 0
         next_sequence: LumaSequence = self.children[self.current_child_index]
         next_sequence.start()
 
@@ -1313,7 +1318,10 @@ class MenuScene(Scene):
             menu_info_panel.add_child(highscore_sequence)
         if lastscore > 0:
             menu_info_panel.add_child(lastscore_sequence)
-        menu_info_panel.start_sequence()
+        if main.is_first_game:
+            menu_info_panel.start_sequence()
+        else:
+            menu_info_panel.start_sequence(2)
         luma_screen.child = menu_info_panel
         luma_screen.need_redraw = True
         if input_manager.joystick_is_connected:
