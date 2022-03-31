@@ -472,10 +472,10 @@ class InputManager:
                     self.pressed_hard_drop = True
                 elif event.button == JKEY_SEL:
                     self.pressed_quit = True
-                elif event.button == 2:
-                    self.pressed_rotate_left = True
-                elif event.button == 0:
+                elif event.button == JKEY_B:
                     self.pressed_rotate_right = True
+                elif event.button == JKEY_A:
+                    self.pressed_rotate_left = True
                 elif event.button == 5:
                     self.pressed_palette_left = True
                 elif event.button == 4:
@@ -505,6 +505,8 @@ class InputManager:
                     elif val == 1:
                         self.pressed_down = True
                         self.pressing_down = True
+                    elif val == -1:
+                        self.pressed_hard_drop = True
             elif event.type == JOYHATMOTION:
                 if event.value[0] == -1:
                     self.pressing_left = True
@@ -776,7 +778,7 @@ class Piece(GameObject):
             break
         if self.hard_dropped:
             if time.time() > self.last_hard_drop_time + PAUSE_AFTER_HARD_DROP_TIME:
-                self.draw_hard_drop((0, 0, 0))
+                #self.draw_hard_drop((0, 0, 0))
                 self.add_to_board()
 
     def rotate(self, direction):
@@ -854,7 +856,7 @@ class Piece(GameObject):
         self.hard_drop_start = self.y
         self.hard_drop_height = self.get_drop_position()
         self.hard_drop_x = self.x
-        self.draw_hard_drop(game_scene.current_palette.ghost_color)
+        #self.draw_hard_drop(game_scene.current_palette.ghost_color)
         self.y += self.hard_drop_height
         self.drop_row_count = self.hard_drop_height << 1
         self.movable = False
@@ -1356,7 +1358,7 @@ class MenuScene(Scene):
 
     @staticmethod
     def draw_title(color):
-        draw_letter(1, 2, t_letter, color)
+        draw_letter(1, 2, e_letter, color)
         draw_letter(6, 2, e_letter, color)
         draw_letter(1, 8, t_letter, color)
         draw_letter(6, 8, r_letter, color)
