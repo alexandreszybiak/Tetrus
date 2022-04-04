@@ -25,24 +25,24 @@ PAUSE_AFTER_HARD_DROP_TIME = 0.1
 PAUSE_BETWEEN_LINE_CLEAR_STEPS = 0.03  # 1 frame = 0.03
 INVALID_ROTATION_FEEDBACK_DURATION = 0.06
 
-highscore = 0
+highscores = [0, 0, 0]
 lastscore = 0
 
 is_first_game = True
 
 if PI:
-    HIGHSCORE_FILENAME = "/home/pi/tetrus_highscore.p"
+    HIGHSCORE_FILENAME = "/home/pi/tetrus_highscores.p"
     LASTSCORE_FILENAME = "/home/pi/tetrus_lastscore.p"
 else:
-    HIGHSCORE_FILENAME = "tetrus_highscore.p"
+    HIGHSCORE_FILENAME = "tetrus_highscores.p"
     LASTSCORE_FILENAME = "tetrus_lastscore.p"
 
 try:
-    highscore = pickle.load(open(HIGHSCORE_FILENAME, "rb"))
+    highscores = pickle.load(open(HIGHSCORE_FILENAME, "rb"))
 except OSError:
-    highscore = 0
+    highscores = [0, 0, 0]
 except EOFError:
-    highscore = 0
+    highscores = [0, 0, 0]
 
 try:
     lastscore = pickle.load(open(LASTSCORE_FILENAME, "rb"))
@@ -50,6 +50,8 @@ except OSError:
     lastscore = 0
 except EOFError:
     lastscore = 0
+
+print(highscores)
 
 # Constant
 mask = bytearray([1, 2, 4, 8, 16, 32, 64, 128])
@@ -722,9 +724,13 @@ class Piece(GameObject):
             game_scene.begin_fill_state()
             pickle.dump(game_scene.score, open(LASTSCORE_FILENAME, "wb"))
             main.lastscore = game_scene.score
-            if game_scene.score > highscore:
-                pickle.dump(game_scene.score, open(HIGHSCORE_FILENAME, "wb"))
-                main.highscore = game_scene.score
+            for i in range(len(highscores)):
+                if game_scene.score > highscores[i]:
+                    main.highscores.insert(i, game_scene.score)
+                    main.highscores = main.highscores[:3]
+                    pickle.dump(main.highscores, open(HIGHSCORE_FILENAME, "wb"))
+                    break
+                i += 1
             self.visible = True
         input_manager.pressing_down = False
         # input_manager.pressing_left = False
@@ -778,7 +784,7 @@ class Piece(GameObject):
             break
         if self.hard_dropped:
             if time.time() > self.last_hard_drop_time + PAUSE_AFTER_HARD_DROP_TIME:
-                #self.draw_hard_drop((0, 0, 0))
+                # self.draw_hard_drop((0, 0, 0))
                 self.add_to_board()
 
     def rotate(self, direction):
@@ -856,7 +862,7 @@ class Piece(GameObject):
         self.hard_drop_start = self.y
         self.hard_drop_height = self.get_drop_position()
         self.hard_drop_x = self.x
-        #self.draw_hard_drop(game_scene.current_palette.ghost_color)
+        # self.draw_hard_drop(game_scene.current_palette.ghost_color)
         self.y += self.hard_drop_height
         self.drop_row_count = self.hard_drop_height << 1
         self.movable = False
@@ -866,8 +872,8 @@ class Piece(GameObject):
 
     def draw_hard_drop(self, color):
         for y in range(self.hard_drop_height):
-            #color_multiplier = y / self.hard_drop_height
-            #new_color = (color[0] * color_multiplier, color[1] * color_multiplier, color[2] * color_multiplier)
+            # color_multiplier = y / self.hard_drop_height
+            # new_color = (color[0] * color_multiplier, color[1] * color_multiplier, color[2] * color_multiplier)
             self.draw_piece(self.hard_drop_x, self.hard_drop_start + y, color)
 
     def clear_hard_drop(self):
@@ -1243,9 +1249,15 @@ class PressStartSequence(ConnectGamepadSequence):
 
 
 class HighScoreSequence(LumaSequence):
+    def __init__(self, duration,  index):
+        super().__init__(duration)
+        self.index = index
+
     def draw(self, surface):
         self.parent_device.draw_icon(cup_icon, 0, 0, surface)
-        self.parent_device.draw_text(str(highscore), 33, -1, surface, left_to_right=False)
+        for i in range(self.index + 1):
+            self.parent_device.draw_point(6, i * 2, LUMA_COLOR_ON, surface)
+        self.parent_device.draw_text(str(highscores[self.index]), 33, -1, surface, left_to_right=False)
 
 
 class LastScoreSequence(LumaSequence):
@@ -1262,6 +1274,9 @@ class MenuInfoPanel(LumaScreenChild):
 
     def add_child(self, child):
         self.children.append(child)
+
+    def get_length(self):
+        return len(self.children)
 
     def reset_sequence(self):
         self.children = []
@@ -1281,6 +1296,13 @@ class MenuInfoPanel(LumaScreenChild):
         self.current_child_index += 1
         if self.current_child_index >= len(self.children):
             self.current_child_index = 0
+        next_sequence: LumaSequence = self.children[self.current_child_index]
+        next_sequence.start()
+
+    def load_previous(self):
+        self.current_child_index -= 1
+        if self.current_child_index < 0:
+            self.current_child_index = len(self.children) - 1
         next_sequence: LumaSequence = self.children[self.current_child_index]
         next_sequence.start()
 
@@ -1310,20 +1332,24 @@ class MenuScene(Scene):
         luma_screen.child = menu_info_panel
         luma_screen.need_redraw = True
 
+    def create_score_sequences(self):
+        for i in range(len(highscores)):
+            if highscores[i] > 0:
+                menu_info_panel.add_child(highscore_sequences[i])
+        if lastscore > 0:
+            menu_info_panel.add_child(lastscore_sequence)
+
     def enter(self):
         menu_info_panel.reset_sequence()
         if input_manager.joystick_is_connected:
             menu_info_panel.add_child(press_start_sequence)
         else:
             menu_info_panel.add_child(connect_gamepad_sequence)
-        if highscore > 0:
-            menu_info_panel.add_child(highscore_sequence)
-        if lastscore > 0:
-            menu_info_panel.add_child(lastscore_sequence)
+        self.create_score_sequences()
         if main.is_first_game:
             menu_info_panel.start_sequence()
         else:
-            menu_info_panel.start_sequence(2)
+            menu_info_panel.start_sequence(menu_info_panel.get_length() - 1)
         luma_screen.child = menu_info_panel
         luma_screen.need_redraw = True
         if input_manager.joystick_is_connected:
@@ -1336,19 +1362,13 @@ class MenuScene(Scene):
             self.draw_title(default_palette.piece_color)
             menu_info_panel.reset_sequence()
             menu_info_panel.add_child(press_start_sequence)
-            if highscore > 0:
-                menu_info_panel.add_child(highscore_sequence)
-            if lastscore > 0:
-                menu_info_panel.add_child(lastscore_sequence)
+            self.create_score_sequences()
             menu_info_panel.start_sequence()
         elif input_manager.disconnected_joystick:
             self.draw_title(default_palette.ghost_color)
             menu_info_panel.reset_sequence()
             menu_info_panel.add_child(connect_gamepad_sequence)
-            if highscore > 0:
-                menu_info_panel.add_child(highscore_sequence)
-            if lastscore > 0:
-                menu_info_panel.add_child(lastscore_sequence)
+            self.create_score_sequences()
             menu_info_panel.start_sequence()
         if input_manager.pressed_pause:
             scene_manager.change_scene(game_scene)
@@ -1356,6 +1376,8 @@ class MenuScene(Scene):
             terminate()
         if input_manager.pressed_right:
             menu_info_panel.load_next()
+        elif input_manager.pressed_left:
+            menu_info_panel.load_previous()
         menu_info_panel.update()
 
     @staticmethod
@@ -1551,7 +1573,10 @@ else:
     luma_screen = LumaScreenSimulator()
 
 connect_gamepad_sequence = ConnectGamepadSequence(1, 5)
-highscore_sequence = HighScoreSequence(6)
+highscore_sequences = []
+for i in range(len(highscores)):
+    highscore_sequences.append(HighScoreSequence(6, i))
+
 lastscore_sequence = LastScoreSequence(6)
 press_start_sequence = PressStartSequence(1, 5)
 
