@@ -1354,11 +1354,13 @@ class MenuScene(Scene):
             scene_manager.change_scene(game_scene)
         if input_manager.pressed_quit:
             terminate()
+        if input_manager.pressed_right:
+            menu_info_panel.load_next()
         menu_info_panel.update()
 
     @staticmethod
     def draw_title(color):
-        draw_letter(1, 2, e_letter, color)
+        draw_letter(1, 2, t_letter, color)
         draw_letter(6, 2, e_letter, color)
         draw_letter(1, 8, t_letter, color)
         draw_letter(6, 8, r_letter, color)
