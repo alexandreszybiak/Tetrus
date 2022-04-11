@@ -51,8 +51,6 @@ except OSError:
 except EOFError:
     lastscore = 0
 
-print(highscores)
-
 # Constant
 mask = bytearray([1, 2, 4, 8, 16, 32, 64, 128])
 
@@ -545,6 +543,10 @@ class NeoPixelScreen:
         for x in range(BOARD_WIDTH):
             self.set_cell(x, y, color)
 
+    def clear_line(self, y):
+        for x in range(BOARD_WIDTH):
+            self.clear_cell(x, y)
+
     def fill(self, color):
         pixels.fill(color)
         self.need_refresh = True
@@ -922,21 +924,33 @@ class BoardFiller:
         self.last_fill_time = 0
         self.fill_frequency = 0.05
         self.color = game_scene.current_palette.piece_color
+        self.is_filling = True
 
     def reset(self):
         self.last_fill_time = time.time()
         self.line_to_fill = 20
         self.color = game_scene.current_palette.piece_color
+        self.is_filling = True
 
     def update(self):
-        if self.line_to_fill == 0 and time.time() - self.end_fill_time > self.pause_before_reset_duration:
-            main.is_first_game = False
-            scene_manager.change_scene(menu_scene)
-        elif self.line_to_fill > 0 and time.time() - self.last_fill_time > self.fill_frequency:
-            self.line_to_fill -= 1
-            neopixel_screen.set_line(self.line_to_fill, self.color)
-            self.end_fill_time = time.time()
-            self.last_fill_time = time.time()
+        if self.is_filling:
+            if self.line_to_fill == 0 and time.time() - self.end_fill_time > self.pause_before_reset_duration:
+                self.is_filling = False
+            elif self.line_to_fill > 0 and time.time() - self.last_fill_time > self.fill_frequency:
+                self.line_to_fill -= 1
+                neopixel_screen.set_line(self.line_to_fill, self.color)
+                self.end_fill_time = time.time()
+                self.last_fill_time = time.time()
+        else:
+            if self.line_to_fill == 20 and time.time() - self.end_fill_time > self.pause_before_reset_duration:
+                main.is_first_game = False
+                scene_manager.change_scene(menu_scene)
+            elif self.line_to_fill < 20 and time.time() - self.last_fill_time > self.fill_frequency:
+                neopixel_screen.clear_line(self.line_to_fill)
+                self.line_to_fill += 1
+                self.end_fill_time = time.time()
+                self.last_fill_time = time.time()
+
 
 
 class LineFlasher:
