@@ -40,9 +40,9 @@ else:
 try:
     highscores = pickle.load(open(HIGHSCORE_FILENAME, "rb"))
 except OSError:
-    highscores = [0, 0, 0]
+    highscores = [2000, 1500, 1000]
 except EOFError:
-    highscores = [0, 0, 0]
+    highscores = [2000, 1500, 1000]
 
 try:
     lastscore = pickle.load(open(LASTSCORE_FILENAME, "rb"))
@@ -292,6 +292,7 @@ gamepad_icon = [
     [124, 130, 137, 157, 73, 65, 65, 65, 65, 73, 149, 137, 130, 124],
     [124, 130, 137, 157, 73, 65, 65, 73, 65, 73, 149, 137, 130, 124]
 ]
+big_cup_icon = [7, 9, 575, 639, 1023, 1023, 639, 575, 9, 7]
 
 t_letter = [0x01, 0x1f, 0x01]
 e_letter = [0x1f, 0x15, 0x11]
@@ -567,6 +568,15 @@ class NeoPixelScreen:
             pixels.show()
             self.need_refresh = False
 
+    def draw_sprite(self, sprite, x, y, color=0xffffff, height=8):
+        pixel_x = x
+        for byte in sprite:
+            for j in range(height):
+                if byte & 0x01 > 0:
+                    self.set_cell(pixel_x, y + j, color)
+                byte >>= 1
+            pixel_x += 1
+
 
 class NeoPixelScreenSimulator(NeoPixelScreen):
     def __init__(self):
@@ -724,15 +734,6 @@ class Piece(GameObject):
         self.draw_piece(self.x, self.y, self.color)
         if not self.is_valid_position(add_x=0, add_y=0):
             game_scene.begin_fill_state()
-            pickle.dump(game_scene.score, open(LASTSCORE_FILENAME, "wb"))
-            main.lastscore = game_scene.score
-            for i in range(len(highscores)):
-                if game_scene.score > highscores[i]:
-                    main.highscores.insert(i, game_scene.score)
-                    main.highscores = main.highscores[:3]
-                    pickle.dump(main.highscores, open(HIGHSCORE_FILENAME, "wb"))
-                    break
-                i += 1
             self.visible = True
         input_manager.pressing_down = False
         # input_manager.pressing_left = False
@@ -925,14 +926,21 @@ class BoardFiller:
         self.fill_frequency = 0.05
         self.color = game_scene.current_palette.piece_color
         self.is_filling = True
+        self.completed = False
 
     def reset(self):
         self.last_fill_time = time.time()
         self.line_to_fill = 20
         self.color = game_scene.current_palette.piece_color
         self.is_filling = True
+        self.completed = False
+
+    def is_complete(self):
+        return self.completed
 
     def update(self):
+        if self.completed:
+            return
         if self.is_filling:
             if self.line_to_fill == 0 and time.time() - self.end_fill_time > self.pause_before_reset_duration:
                 self.is_filling = False
@@ -943,8 +951,7 @@ class BoardFiller:
                 self.last_fill_time = time.time()
         else:
             if self.line_to_fill == 20 and time.time() - self.end_fill_time > self.pause_before_reset_duration:
-                main.is_first_game = False
-                scene_manager.change_scene(menu_scene)
+                self.completed = True
             elif self.line_to_fill < 20 and time.time() - self.last_fill_time > self.fill_frequency:
                 neopixel_screen.clear_line(self.line_to_fill)
                 self.line_to_fill += 1
@@ -1411,7 +1418,7 @@ class GameScene(Scene):
         self.falling_piece = falling_piece
         self.line_cleaner = line_cleaner
         self.line_flasher: LineFlasher = None
-        self.board_filler = board_filler
+        self.board_filler: BoardFiller = board_filler
         self.next_piece = None
         self.state = state_wait
         self.score = 0
@@ -1441,7 +1448,7 @@ class GameScene(Scene):
                 if input_manager.pressed_pause or not input_manager.joystick_is_connected:
                     self.active = False
                     neopixel_screen.fill(0)
-                    draw_pause_icon(3, 7)
+                    neopixel_screen.draw_sprite(pause_icon, 3, 7)
                     return
                 falling_piece.update()
             elif self.state == state_preclear:
@@ -1450,6 +1457,19 @@ class GameScene(Scene):
                 self.line_cleaner.update()
             elif self.state == state_fill:
                 self.board_filler.update()
+                if self.board_filler.is_complete():
+                    main.is_first_game = False
+                    pickle.dump(game_scene.score, open(LASTSCORE_FILENAME, "wb"))
+                    main.lastscore = game_scene.score
+                    for score_index in range(len(highscores)):
+                        if game_scene.score > highscores[score_index]:
+                            main.highscores.insert(score_index, game_scene.score)
+                            main.highscores = main.highscores[:3]
+                            pickle.dump(main.highscores, open(HIGHSCORE_FILENAME, "wb"))
+                            scene_manager.change_scene(celebration_scene)
+                            return
+                        score_index += 1
+                    scene_manager.change_scene(menu_scene)
         else:
             if input_manager.pressed_pause:
                 self.active = True
@@ -1511,6 +1531,25 @@ class GameScene(Scene):
             self.pick_next_piece()
 
 
+class CelebrationScene(Scene):
+    def __init__(self):
+        super().__init__()
+        self.duration = 5
+        self.time_at_start = 0
+
+    def enter(self):
+        self.time_at_start = time.time()
+        neopixel_screen.draw_sprite(big_cup_icon, 0, 6, 0xfbf236, 10)
+
+    def exit(self):
+        neopixel_screen.fill(0)
+
+    def update(self):
+        if time.time() - self.time_at_start > self.duration:
+            scene_manager.change_scene(menu_scene)
+        if input_manager.pressed_quit:
+            terminate()
+
 def is_on_board(x, y):
     return 0 <= x < stack.width and y < stack.height
 
@@ -1570,7 +1609,7 @@ pygame.joystick.init()
 piece_dealer = PieceDealerBagAlex()
 stack = None
 falling_piece = None
-board_filler = None
+board_filler : BoardFiller = None
 line_cleaner = None
 line_flasher = None
 
@@ -1602,6 +1641,7 @@ luma_screen.fill(0)
 
 menu_scene = MenuScene()
 game_scene = GameScene()
+celebration_scene = CelebrationScene()
 scene_manager.change_scene(menu_scene)
 
 stack = Stack()
