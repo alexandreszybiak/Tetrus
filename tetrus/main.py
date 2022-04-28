@@ -40,9 +40,9 @@ else:
 try:
     highscores = pickle.load(open(HIGHSCORE_FILENAME, "rb"))
 except OSError:
-    highscores = [2000, 1500, 1000]
+    highscores = [2000, 1500, 100]
 except EOFError:
-    highscores = [2000, 1500, 1000]
+    highscores = [2000, 1500, 100]
 
 try:
     lastscore = pickle.load(open(LASTSCORE_FILENAME, "rb"))
@@ -322,9 +322,11 @@ theTetrisFont = [
 
 
 class GameObject:
-    def __init__(self):
+    def __init__(self, x=0, y=0):
         self.active = False
         self.visible = False
+        self.x = x
+        self.y = y
 
     def update(self):
         pass
@@ -373,6 +375,11 @@ class InputManager:
         self.pressed_quit = False
         self.pressed_any = False
         self.pressed_pause = False
+        self.pressed_pen_left = False
+        self.pressed_pen_right = False
+        self.pressed_pen_up = False
+        self.pressed_pen_down = False
+        self.pressed_pen_draw = False
         self.released_down = False
         self.pressed_palette_left = False
         self.pressed_palette_right = False
@@ -422,6 +429,11 @@ class InputManager:
         self.pressed_simulate_gamepad_connection = False
         self.pressed_simulate_gamepad_deconnection = False
         self.pressed_pause = False
+        self.pressed_pen_left = False
+        self.pressed_pen_right = False
+        self.pressed_pen_up = False
+        self.pressed_pen_down = False
+        self.pressed_pen_draw = False
         self.pressed_any = False
         self.released_down = False
         pygame.event.pump()
@@ -433,16 +445,21 @@ class InputManager:
                 if event.key == K_LEFT:
                     self.pressing_left = True
                     self.pressed_left = True
+                    self.pressed_pen_left = True
                 elif event.key == K_RIGHT:
                     self.pressing_right = True
                     self.pressed_right = True
+                    self.pressed_pen_right = True
                 elif event.key == K_UP:
                     self.pressed_rotate_left = True
+                    self.pressed_pen_up = True
                 elif event.key == K_DOWN:
                     self.pressing_down = True
                     self.pressed_down = True
+                    self.pressed_pen_down = True
                 elif event.key == K_SPACE:
                     self.pressed_hard_drop = True
+                    self.pressed_pen_draw = True
                 elif event.key == K_d:
                     self.pressed_reset_board = True
                 elif event.key == K_q:
@@ -477,6 +494,7 @@ class InputManager:
                     self.pressed_rotate_right = True
                 elif event.button == JKEY_A:
                     self.pressed_rotate_left = True
+                    self.pressed_pen_draw = True
                 elif event.button == 5:
                     self.pressed_palette_left = True
                 elif event.button == 4:
@@ -495,9 +513,11 @@ class InputManager:
                     elif val == -1:
                         self.pressing_left = True
                         self.pressed_left = True
+                        self.pressed_pen_left = True
                     elif val == 1:
                         self.pressing_right = True
                         self.pressed_right = True
+                        self.pressed_pen_right = True
                 elif axis == 1:
                     if val == 0:
                         if self.pressing_down:
@@ -506,23 +526,29 @@ class InputManager:
                     elif val == 1:
                         self.pressed_down = True
                         self.pressing_down = True
+                        self.pressed_pen_down = True
                     elif val == -1:
                         self.pressed_hard_drop = True
+                        self.pressed_pen_up = True
             elif event.type == JOYHATMOTION:
                 if event.value[0] == -1:
                     self.pressing_left = True
                     self.pressed_left = True
+                    self.pressed_pen_left = True
                 elif event.value[0] == 1:
                     self.pressing_right = True
                     self.pressed_right = True
+                    self.pressed_pen_right = True
                 elif event.value[0] == 0:
                     self.pressing_left = False
                     self.pressing_right = False
                 if event.value[1] == -1:
                     self.pressing_down = True
                     self.pressed_down = True
+                    self.pressed_pen_down = True
                 elif event.value[1] == 1:
                     self.pressed_hard_drop = True
+                    self.pressed_pen_up = True
                 elif event.value[1] == 0:
                     if self.pressing_down:
                         self.released_down = True
@@ -535,6 +561,8 @@ class NeoPixelScreen:
         self.need_refresh = True
 
     def set_cell(self, x, y, color):
+        if color == blank:
+            return
         self.draw_cell(x, y, color)
 
     def clear_cell(self, x, y):
@@ -584,6 +612,8 @@ class NeoPixelScreenSimulator(NeoPixelScreen):
         application_surface.fill(SIMULATOR_BACKGROUND)
 
     def set_cell(self, x, y, color):
+        if color == blank:
+            return
         self.draw_cell(x, y, color)
 
     def clear_cell(self, x, y):
@@ -669,7 +699,8 @@ class LumaScreenSimulator(LumaScreenPrototype):
     def refresh(self):
         if self.need_redraw:
             self.fill(0)
-            self.child.draw(application_surface)
+            if self.child is not None:
+                self.child.draw(application_surface)
             pygame.display.update()
             self.need_redraw = False
 
@@ -1069,14 +1100,13 @@ class LineCleaner:
         self.burn_color = game_scene.current_palette.flash_color
 
 
-class Stack(GameObject):
-    def __init__(self):
+class NeoPixelCanvas(GameObject):
+    def __init__(self, width, height):
         super().__init__()
-        self.width = 10
-        self.height = 20
-        self.color = game_scene.current_palette.stack_color
+        self.width = width
+        self.height = height
         self.content = []
-        for i in range(self.width):
+        for column in range(self.width):
             self.content.append([blank] * self.height)
 
     def reset(self):
@@ -1088,7 +1118,7 @@ class Stack(GameObject):
         self.content[x][y] = value
 
     def set_line(self, y, value):
-        for x in range(stack.width):
+        for x in range(self.width):
             self.set_cell(x, y, value)
 
     def get_cell(self, x, y):
@@ -1096,27 +1126,34 @@ class Stack(GameObject):
             return blank
         return self.content[x][y]
 
+    def draw(self):
+        for x in range(self.width):
+            for y in range(self.height):
+                if self.content[x][y] == blank:
+                    continue
+                neopixel_screen.set_cell(x, y, self.content[x][y])
+
+
+class Stack(NeoPixelCanvas):
+    def __init__(self, width, height):
+        super().__init__(width, height)
+        self.color = game_scene.current_palette.stack_color
+
     def is_line_complete(self, y):
         for x in range(self.width):
             if self.content[x][y] == blank:
                 return False
         return True
 
-    def is_line_empty(self, y):
-        for x in range(self.width):
-            if self.content[x][y] != blank:
-                return False
-        return True
+    def change_color(self):
+        self.color = game_scene.current_palette.stack_color
 
     def draw_stack(self):
-        for x in range(BOARD_WIDTH):
-            for y in range(BOARD_HEIGHT):
+        for x in range(self.width):
+            for y in range(self.height):
                 if self.content[x][y] == blank:
                     continue
                 neopixel_screen.set_cell(x, y, self.color)
-
-    def change_color(self):
-        self.color = game_scene.current_palette.stack_color
 
 
 class PieceDealer:
@@ -1328,6 +1365,8 @@ class MenuInfoPanel(LumaScreenChild):
         next_sequence.start()
 
     def draw(self, surface):
+        if len(self.children) == 0:
+            return
         sequence: LumaSequence = self.children[self.current_child_index]
         sequence.draw(surface)
 
@@ -1340,7 +1379,8 @@ class Scene:
         pass
 
     def update(self):
-        pass
+        if input_manager.pressed_quit:
+            terminate()
 
     def exit(self):
         pass
@@ -1379,6 +1419,7 @@ class MenuScene(Scene):
             self.draw_title(default_palette.ghost_color)
 
     def update(self):
+        super().update()
         if input_manager.connected_joystick:
             self.draw_title(default_palette.piece_color)
             menu_info_panel.reset_sequence()
@@ -1443,6 +1484,7 @@ class GameScene(Scene):
         self.begin_fall_state()
 
     def update(self):
+        super().update()
         if self.active:
             if self.state == state_fall:
                 if input_manager.pressed_pause or not input_manager.joystick_is_connected:
@@ -1545,10 +1587,66 @@ class CelebrationScene(Scene):
         neopixel_screen.fill(0)
 
     def update(self):
+        super().update()
         if time.time() - self.time_at_start > self.duration:
+            scene_manager.change_scene(drawing_scene)
+
+
+class DrawingScene(Scene):
+    def __init__(self):
+        super().__init__()
+        self.width = BOARD_WIDTH
+        self.height = BOARD_HEIGHT
+        self.canvas: NeoPixelCanvas = None
+        self.drawing_pen: DrawingPen = None
+
+    def enter(self):
+        pass
+
+    def exit(self):
+        neopixel_screen.fill(0)
+
+    def update(self):
+        super().update()
+        self.drawing_pen.update()
+        if input_manager.pressed_pause:
             scene_manager.change_scene(menu_scene)
-        if input_manager.pressed_quit:
-            terminate()
+
+
+class DrawingPen(GameObject):
+    def __init__(self, x=0, y=0):
+        super().__init__(x, y)
+        self.canvas: NeoPixelCanvas = drawing_scene.canvas
+
+    def translate(self, x, y):
+        current_color = self.canvas.get_cell(self.x, self.y)
+        if current_color == blank:
+            neopixel_screen.set_cell(self.x, self.y, 0x000000)
+        else:
+            neopixel_screen.set_cell(self.x, self.y, current_color)
+        self.x += x
+        self.y += y
+        self.draw()
+
+    def update(self):
+        if input_manager.pressed_pen_up:
+            self.translate(0, -1)
+        elif input_manager.pressed_pen_down:
+            self.translate(0, 1)
+        elif input_manager.pressed_pen_left:
+            self.translate(-1, 0)
+        elif input_manager.pressed_pen_right:
+            self.translate(1, 0)
+        if input_manager.pressed_pen_draw:
+            self.canvas.set_cell(self.x, self.y, 0x45283c)
+            neopixel_screen.set_cell(self.x, self.y, 0x45283c)
+
+    def clear(self):
+        neopixel_screen.clear_cell(self.x, self.y)
+
+    def draw(self):
+        neopixel_screen.set_cell(self.x, self.y, 0xffffff)
+
 
 def is_on_board(x, y):
     return 0 <= x < stack.width and y < stack.height
@@ -1642,9 +1740,15 @@ luma_screen.fill(0)
 menu_scene = MenuScene()
 game_scene = GameScene()
 celebration_scene = CelebrationScene()
-scene_manager.change_scene(menu_scene)
 
-stack = Stack()
+drawing_canvas = NeoPixelCanvas(BOARD_WIDTH, BOARD_HEIGHT)
+drawing_scene = DrawingScene()
+drawing_scene.canvas = drawing_canvas
+drawing_scene.drawing_pen = DrawingPen(2, 2)
+
+scene_manager.change_scene(drawing_scene)
+
+stack = Stack(BOARD_WIDTH, BOARD_HEIGHT)
 falling_piece = Piece()
 
 game_scene.board_filler = BoardFiller()
