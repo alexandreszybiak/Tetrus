@@ -1619,6 +1619,8 @@ class DrawingPen(GameObject):
         self.canvas: NeoPixelCanvas = drawing_scene.canvas
 
     def translate(self, x, y):
+        if self.x + x < 0 or self.x + x >= self.canvas.width or self.y + y < 0 or self.y + y >= self.canvas.height:
+            return
         current_color = self.canvas.get_cell(self.x, self.y)
         if current_color == blank:
             neopixel_screen.set_cell(self.x, self.y, 0x000000)
@@ -1646,6 +1648,18 @@ class DrawingPen(GameObject):
 
     def draw(self):
         neopixel_screen.set_cell(self.x, self.y, 0xffffff)
+
+
+class TetrisPerformance:
+    def __init__(self, score, signature):
+        self.score = score
+        self.signature = signature
+
+    def set_score(self, score):
+        self.score = score
+
+    def get_score(self):
+        return self.score
 
 
 def is_on_board(x, y):
@@ -1746,7 +1760,7 @@ drawing_scene = DrawingScene()
 drawing_scene.canvas = drawing_canvas
 drawing_scene.drawing_pen = DrawingPen(2, 2)
 
-scene_manager.change_scene(drawing_scene)
+scene_manager.change_scene(menu_scene)
 
 stack = Stack(BOARD_WIDTH, BOARD_HEIGHT)
 falling_piece = Piece()
