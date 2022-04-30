@@ -1074,7 +1074,7 @@ class LineCleaner:
 
 
 class NeoPixelCanvas(GameObject):
-    def __init__(self, width, height):
+    def __init__(self, width=BOARD_WIDTH, height=BOARD_HEIGHT):
         super().__init__()
         self.width = width
         self.height = height
@@ -1284,6 +1284,13 @@ class HighScoreSequence(LumaSequence):
         super().__init__(duration)
         self.index = index
 
+    def start(self):
+        super().start()
+        neopixel_screen.fill(0)
+        if highscores[self.index].get_signature() is not None:
+            menu_scene.signature_canvas.content = highscores[self.index].get_signature()
+            menu_scene.signature_canvas.draw()
+
     def draw(self, surface):
         self.parent_device.draw_icon(cup_icon, 0, 0, surface)
         for i in range(self.index + 1):
@@ -1365,6 +1372,7 @@ class MenuScene(Scene):
         self.last_score = 0
         luma_screen.child = menu_info_panel
         luma_screen.need_redraw = True
+        self.signature_canvas: NeoPixelCanvas = NeoPixelCanvas()
 
     def create_score_sequences(self):
         for i in range(len(highscores)):
@@ -1374,6 +1382,7 @@ class MenuScene(Scene):
             menu_info_panel.add_child(lastscore_sequence)
 
     def enter(self):
+        print(highscores[0].signature)
         menu_info_panel.reset_sequence()
         if input_manager.joystick_is_connected:
             menu_info_panel.add_child(press_start_sequence)
@@ -1478,9 +1487,11 @@ class GameScene(Scene):
                     main.lastscore = game_scene.score
                     for score_index in range(len(highscores)):
                         if game_scene.score > highscores[score_index].get_score():
-                            main.highscores.insert(score_index, TetrisPerformance(game_scene.score, 0))
+                            new_performance = TetrisPerformance(game_scene.score)
+                            main.highscores.insert(score_index, new_performance)
                             main.highscores = main.highscores[:3]
                             pickle.dump(main.highscores, open(HIGHSCORE_FILENAME, "wb"))
+                            drawing_scene.performance_index = score_index
                             scene_manager.change_scene(celebration_scene)
                             return
                         score_index += 1
@@ -1572,6 +1583,7 @@ class DrawingScene(Scene):
         self.height = BOARD_HEIGHT
         self.canvas: NeoPixelCanvas = None
         self.drawing_pen: DrawingPen = None
+        self.performance_index = 0
 
     def enter(self):
         pass
@@ -1583,6 +1595,8 @@ class DrawingScene(Scene):
         super().update()
         self.drawing_pen.update()
         if input_manager.pressed_pause:
+            highscores[self.performance_index].set_signature(self.canvas.content)
+            pickle.dump(main.highscores, open(HIGHSCORE_FILENAME, "wb"))
             scene_manager.change_scene(menu_scene)
 
 
@@ -1624,15 +1638,21 @@ class DrawingPen(GameObject):
 
 
 class TetrisPerformance:
-    def __init__(self, score, signature):
+    def __init__(self, score):
         self.score = score
-        self.signature = signature
+        self.signature = None
 
     def set_score(self, score):
         self.score = score
 
     def get_score(self):
         return self.score
+
+    def set_signature(self, signature):
+        self.signature = signature
+
+    def get_signature(self):
+        return self.signature
 
 
 def is_on_board(x, y):
@@ -1725,9 +1745,9 @@ else:
 try:
     highscores = pickle.load(open(HIGHSCORE_FILENAME, "rb"))
 except OSError:
-    highscores = [TetrisPerformance(2000, 0), TetrisPerformance(1500, 0), TetrisPerformance(1000, 0)]
+    highscores = [TetrisPerformance(2000), TetrisPerformance(1500), TetrisPerformance(1000)]
 except EOFError:
-    highscores = [TetrisPerformance(2000, 0), TetrisPerformance(1500, 0), TetrisPerformance(1000, 0)]
+    highscores = [TetrisPerformance(2000), TetrisPerformance(1500), TetrisPerformance(1000)]
 
 try:
     lastscore = pickle.load(open(LASTSCORE_FILENAME, "rb"))
@@ -1735,6 +1755,11 @@ except OSError:
     lastscore = 0
 except EOFError:
     lastscore = 0
+
+for obj in highscores:
+    if type(obj) is int:
+        highscores = [TetrisPerformance(2000), TetrisPerformance(1500), TetrisPerformance(1000)]
+        break
 
 connect_gamepad_sequence = ConnectGamepadSequence(1, 5)
 highscore_sequences = []
