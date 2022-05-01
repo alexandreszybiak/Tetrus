@@ -31,6 +31,10 @@ mask = bytearray([1, 2, 4, 8, 16, 32, 64, 128])
 # Game Constants
 BOARD_WIDTH = 10
 BOARD_HEIGHT = 20
+BRONZE_COLOR = 0xcd7f32
+SILVER_COLOR = 0xc3c7c7
+GOLD_COLOR = 0xffd700
+cup_colors = [GOLD_COLOR, SILVER_COLOR, BRONZE_COLOR]
 
 # Gamepad Constants
 JKEY_X = 3
@@ -1491,6 +1495,7 @@ class GameScene(Scene):
                             main.highscores.insert(score_index, new_performance)
                             main.highscores = main.highscores[:3]
                             pickle.dump(main.highscores, open(HIGHSCORE_FILENAME, "wb"))
+                            celebration_scene.performance_index = score_index
                             drawing_scene.performance_index = score_index
                             scene_manager.change_scene(celebration_scene)
                             return
@@ -1562,10 +1567,11 @@ class CelebrationScene(Scene):
         super().__init__()
         self.duration = 5
         self.time_at_start = 0
+        self.performance_index = 0
 
     def enter(self):
         self.time_at_start = time.time()
-        neopixel_screen.draw_sprite(big_cup_icon, 0, 6, 0xfbf236, 10)
+        neopixel_screen.draw_sprite(big_cup_icon, 0, 6, cup_colors[self.performance_index], 10)
 
     def exit(self):
         neopixel_screen.fill(0)
@@ -1590,6 +1596,7 @@ class DrawingScene(Scene):
 
     def exit(self):
         neopixel_screen.fill(0)
+        self.canvas.reset()
 
     def update(self):
         super().update()
@@ -1640,7 +1647,9 @@ class DrawingPen(GameObject):
 class TetrisPerformance:
     def __init__(self, score):
         self.score = score
-        self.signature = None
+        self.signature = []
+        for column in range(BOARD_WIDTH):
+            self.signature.append([blank] * BOARD_HEIGHT)
 
     def set_score(self, score):
         self.score = score
@@ -1649,7 +1658,9 @@ class TetrisPerformance:
         return self.score
 
     def set_signature(self, signature):
-        self.signature = signature
+        for x in range(BOARD_WIDTH):
+            print(x)
+            self.signature[x] = signature[x].copy()
 
     def get_signature(self):
         return self.signature
