@@ -1257,6 +1257,7 @@ class ConnectGamepadSequence(LumaSequence):
         self.gamepad_last_frame_time = time.time()
         self.gamepad_current_frame = 0
         self.loop_count = 0
+        neopixel_screen.fill(0)
 
     def end(self):
         menu_info_panel.load_next()
@@ -1279,6 +1280,10 @@ class ConnectGamepadSequence(LumaSequence):
 
 
 class PressStartSequence(ConnectGamepadSequence):
+    def start(self):
+        super().start()
+        neopixel_screen.fill(0)
+
     def draw(self, surface):
         self.parent_device.draw_icon(gamepad_icon[self.gamepad_current_frame], 9, 0, surface)
 
@@ -1303,6 +1308,10 @@ class HighScoreSequence(LumaSequence):
 
 
 class LastScoreSequence(LumaSequence):
+    def start(self):
+        super().start()
+        neopixel_screen.fill(0)
+
     def draw(self, surface):
         self.parent_device.draw_icon(time_icon, 0, 0, surface)
         self.parent_device.draw_text(str(lastscore), 33, -1, surface, left_to_right=False)
@@ -1386,7 +1395,6 @@ class MenuScene(Scene):
             menu_info_panel.add_child(lastscore_sequence)
 
     def enter(self):
-        print(highscores[0].signature)
         menu_info_panel.reset_sequence()
         if input_manager.joystick_is_connected:
             menu_info_panel.add_child(press_start_sequence)
@@ -1659,7 +1667,6 @@ class TetrisPerformance:
 
     def set_signature(self, signature):
         for x in range(BOARD_WIDTH):
-            print(x)
             self.signature[x] = signature[x].copy()
 
     def get_signature(self):
