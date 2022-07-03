@@ -1296,9 +1296,9 @@ class HighScoreSequence(LumaSequence):
     def start(self):
         super().start()
         neopixel_screen.fill(0)
-        if highscores[self.index].get_signature() is not None:
-            menu_scene.signature_canvas.content = highscores[self.index].get_signature()
-            menu_scene.signature_canvas.draw()
+        # if highscores[self.index].get_signature() is not None:
+        #     menu_scene.signature_canvas.content = highscores[self.index].get_signature()
+        #     menu_scene.signature_canvas.draw()
 
     def draw(self, surface):
         self.parent_device.draw_icon(cup_icon, 0, 0, surface)
@@ -1587,7 +1587,7 @@ class CelebrationScene(Scene):
     def update(self):
         super().update()
         if time.time() - self.time_at_start > self.duration:
-            scene_manager.change_scene(drawing_scene)
+            scene_manager.change_scene(menu_scene)
 
 
 class DrawingScene(Scene):
