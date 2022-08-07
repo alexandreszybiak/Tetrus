@@ -20,6 +20,19 @@ if PI:
 else:
     from font import LCD_FONT, SEG7_FONT, TINY_FONT
 
+# Images
+logo = [1, 31, 1]
+pause_icon = [0x1f, 0x00, 0x00, 0x1f]
+cup_icon = [3, 23, 31, 23, 3]
+time_icon = [14, 17, 23, 21, 14]
+big_time_icon = [14, 17, 23, 21, 14]
+bluetooth_icon = [66, 36, 255, 90, 36]
+gamepad_icon = [
+    [124, 130, 137, 157, 73, 65, 65, 65, 65, 73, 149, 137, 130, 124],
+    [124, 130, 137, 157, 73, 65, 65, 73, 65, 73, 149, 137, 130, 124]
+]
+big_cup_icon = [7, 9, 575, 639, 1023, 1023, 639, 575, 9, 7]
+
 # Gameplay constants
 PAUSE_AFTER_HARD_DROP_TIME = 0.1
 PAUSE_BETWEEN_LINE_CLEAR_STEPS = 0.03  # 1 frame = 0.03
@@ -261,22 +274,6 @@ number_font = [
     0x01, 0x01, 0x1F,
     0x1F, 0x15, 0x1F,
     0x17, 0x15, 0x1F]
-
-pause_icon = [0x1f, 0x00, 0x00, 0x1f]
-cup_icon = [3, 23, 31, 23, 3]
-time_icon = [14, 17, 23, 21, 14]
-bluetooth_icon = [66, 36, 255, 90, 36]
-gamepad_icon = [
-    [124, 130, 137, 157, 73, 65, 65, 65, 65, 73, 149, 137, 130, 124],
-    [124, 130, 137, 157, 73, 65, 65, 73, 65, 73, 149, 137, 130, 124]
-]
-big_cup_icon = [7, 9, 575, 639, 1023, 1023, 639, 575, 9, 7]
-
-t_letter = [0x01, 0x1f, 0x01]
-e_letter = [0x1f, 0x15, 0x11]
-r_letter = [0x1f, 0x05, 0x1b]
-u_letter = [0x1f, 0x10, 0x1f]
-s_letter = [0x16, 0x15, 0x0d]
 
 shape_previews = {'s': ShapePreviews.S.value,
                   'z': ShapePreviews.Z.value,
@@ -1258,6 +1255,7 @@ class ConnectGamepadSequence(LumaSequence):
         self.gamepad_current_frame = 0
         self.loop_count = 0
         neopixel_screen.fill(0)
+        neopixel_screen.draw_sprite(logo, 0, 0, default_palette.ghost_color, 20)
 
     def end(self):
         menu_info_panel.load_next()
@@ -1283,6 +1281,7 @@ class PressStartSequence(ConnectGamepadSequence):
     def start(self):
         super().start()
         neopixel_screen.fill(0)
+        neopixel_screen.draw_sprite(logo, 0, 0, default_palette.piece_color, 20)
 
     def draw(self, surface):
         self.parent_device.draw_icon(gamepad_icon[self.gamepad_current_frame], 9, 0, surface)
@@ -1296,6 +1295,7 @@ class HighScoreSequence(LumaSequence):
     def start(self):
         super().start()
         neopixel_screen.fill(0)
+        neopixel_screen.draw_sprite(big_cup_icon, 0, 6, cup_colors[self.index], 10)
         # if highscores[self.index].get_signature() is not None:
         #     menu_scene.signature_canvas.content = highscores[self.index].get_signature()
         #     menu_scene.signature_canvas.draw()
@@ -1311,6 +1311,7 @@ class LastScoreSequence(LumaSequence):
     def start(self):
         super().start()
         neopixel_screen.fill(0)
+        neopixel_screen.draw_sprite(big_time_icon, 0, 0, default_palette.piece_color, 20)
 
     def draw(self, surface):
         self.parent_device.draw_icon(time_icon, 0, 0, surface)
@@ -1407,21 +1408,15 @@ class MenuScene(Scene):
             menu_info_panel.start_sequence(menu_info_panel.get_length() - 1)
         luma_screen.child = menu_info_panel
         luma_screen.need_redraw = True
-        if input_manager.joystick_is_connected:
-            self.draw_title(default_palette.piece_color)
-        else:
-            self.draw_title(default_palette.ghost_color)
 
     def update(self):
         super().update()
         if input_manager.connected_joystick:
-            self.draw_title(default_palette.piece_color)
             menu_info_panel.reset_sequence()
             menu_info_panel.add_child(press_start_sequence)
             self.create_score_sequences()
             menu_info_panel.start_sequence()
         elif input_manager.disconnected_joystick:
-            self.draw_title(default_palette.ghost_color)
             menu_info_panel.reset_sequence()
             menu_info_panel.add_child(connect_gamepad_sequence)
             self.create_score_sequences()
@@ -1435,15 +1430,6 @@ class MenuScene(Scene):
         elif input_manager.pressed_left:
             menu_info_panel.load_previous()
         menu_info_panel.update()
-
-    @staticmethod
-    def draw_title(color):
-        draw_letter(1, 2, t_letter, color)
-        draw_letter(6, 2, e_letter, color)
-        draw_letter(1, 8, t_letter, color)
-        draw_letter(6, 8, r_letter, color)
-        draw_letter(1, 14, u_letter, color)
-        draw_letter(6, 14, s_letter, color)
 
 
 class GameScene(Scene):
