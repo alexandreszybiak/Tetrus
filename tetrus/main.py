@@ -21,17 +21,40 @@ else:
     from font import LCD_FONT, SEG7_FONT, TINY_FONT
 
 # Images
-logo = [1, 31, 1]
-pause_icon = [0x1f, 0x00, 0x00, 0x1f]
+#Top Screen - Title screen illustration
+logo = [0, 65520, 65520, 65520, 65520, 3840, 3840, 3840, 3840, 0]
+#T piece illustration
+logo_00 = [0, 65520, 65520, 65520, 65520, 3840, 3840, 3840, 3840, 0]
+#Z piece illustration
+logo_01 = [0, 65280, 65280, 65280, 65280, 4080, 4080, 4080, 4080, 0]
+#S piece illustration
+logo_02 = [0, 4080, 4080, 4080, 4080, 65280, 65280, 65280, 65280, 0]
+#I piece illustration
+logo_03 = [0, 0, 0, 262140, 262140, 262140, 262140, 0, 0, 0]
+#L piece illustration
+logo_04 = [0, 65520, 65520, 65520, 65520, 61440, 61440, 61440, 61440, 0]
+#J piece illustration
+logo_05 = [0, 61440, 61440, 61440, 61440, 65520, 65520, 65520, 65520, 0]
+#O piece illustration
+logo_06 = [0, 16320, 16320, 16320, 16320, 16320, 16320, 16320, 16320, 0]
+#Top Screen - Pause menu illustration
+pause_icon = [0x7f, 0x7f, 0x7f, 0x41, 0x7f, 0x7f, 0x41, 0x7f, 0x7f, 0x7f]
+#Top Screen - Last Scores Clock illustration
+big_time_icon = [0, 3840, 8064, 16320, 14528, 15296, 15296, 8064, 3840, 0]
+#Top Screen - High Scores Cup illustration
+big_cup_icon = [0, 7, 137, 159, 255, 255, 159, 137, 7, 0]
+#Bottom Screen - High Scores Cup illustration
 cup_icon = [3, 23, 31, 23, 3]
+#Bottom Screen - Last Scores Clock illustration
 time_icon = [14, 17, 23, 21, 14]
-big_time_icon = [14, 17, 23, 21, 14]
+#Bottom Screen - Bluetooth icon illustration
 bluetooth_icon = [66, 36, 255, 90, 36]
+#Bottom Screen - Gamepad illustration
 gamepad_icon = [
     [124, 130, 137, 157, 73, 65, 65, 65, 65, 73, 149, 137, 130, 124],
     [124, 130, 137, 157, 73, 65, 65, 73, 65, 73, 149, 137, 130, 124]
 ]
-big_cup_icon = [7, 9, 575, 639, 1023, 1023, 639, 575, 9, 7]
+
 
 # Gameplay constants
 PAUSE_AFTER_HARD_DROP_TIME = 0.1
@@ -1470,7 +1493,7 @@ class GameScene(Scene):
                 if input_manager.pressed_pause or not input_manager.joystick_is_connected:
                     self.active = False
                     neopixel_screen.fill(0)
-                    neopixel_screen.draw_sprite(pause_icon, 3, 7)
+                    neopixel_screen.draw_sprite(pause_icon, 0, 7, game_scene.current_palette.piece_color)
                     return
                 falling_piece.update()
             elif self.state == state_preclear:
@@ -1661,13 +1684,6 @@ class TetrisPerformance:
 
 def is_on_board(x, y):
     return 0 <= x < stack.width and y < stack.height
-
-
-def draw_pause_icon(offset_x, offset_y):
-    for x in range(0, 4):
-        for y in range(0, 5):
-            if pause_icon[x] & mask[y]:
-                neopixel_screen.set_cell(offset_x + x, offset_y + y, game_scene.current_palette.piece_color)
 
 
 def draw_letter(offset_x, offset_y, letter, color):
