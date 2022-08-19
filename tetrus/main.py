@@ -4,6 +4,8 @@ import main
 from enum import Enum
 from pygame.locals import *
 
+random.seed()
+
 PI = True
 if platform.system() == "Windows":
     PI = False
@@ -1278,7 +1280,8 @@ class ConnectGamepadSequence(LumaSequence):
         self.gamepad_current_frame = 0
         self.loop_count = 0
         neopixel_screen.fill(0)
-        neopixel_screen.draw_sprite(logo, 0, 0, default_palette.ghost_color, 20)
+        logo_list = [logo_00, logo_01, logo_02, logo_03, logo_04, logo_05, logo_06]
+        neopixel_screen.draw_sprite(random.choice(logo_list), 0, 0, default_palette.ghost_color, 20)
 
     def end(self):
         menu_info_panel.load_next()
@@ -1304,7 +1307,9 @@ class PressStartSequence(ConnectGamepadSequence):
     def start(self):
         super().start()
         neopixel_screen.fill(0)
-        neopixel_screen.draw_sprite(logo, 0, 0, default_palette.piece_color, 20)
+        logo_list = [logo_00, logo_01, logo_02, logo_03, logo_04, logo_05, logo_06]
+        #neopixel_screen.draw_sprite(logo, 0, 0, default_palette.piece_color, 20)
+        neopixel_screen.draw_sprite(random.choice(logo_list), 0, 0, default_palette.piece_color, 20)
 
     def draw(self, surface):
         self.parent_device.draw_icon(gamepad_icon[self.gamepad_current_frame], 9, 0, surface)
