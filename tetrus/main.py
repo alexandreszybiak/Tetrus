@@ -1290,8 +1290,18 @@ class ConnectGamepadSequence(LumaSequence):
         self.gamepad_current_frame = 0
         self.loop_count = 0
         neopixel_screen.fill(0)
-        logo_list = [logo_00, logo_01, logo_02, logo_03, logo_04, logo_05, logo_06]
-        neopixel_screen.draw_sprite(random.choice(logo_list), 0, 0, default_palette.ghost_color, 20)
+        #logo_list = [logo_00, logo_01, logo_02, logo_03, logo_04, logo_05, logo_06]
+        #neopixel_screen.draw_sprite(logo_04, 0, 0, default_palette.ghost_color, 20)
+        #neopixel_screen.draw_sprite(logo_06, 0, 0, default_palette.ghost_color, 20)
+
+        r = random.choice((0, 1))
+
+        if r == 0:
+            neopixel_screen.draw_sprite(logo_04, -1, -4, 0xffff000, 20)
+            neopixel_screen.draw_sprite(logo_06, -1, 6, 0x0000ff, 20)
+        elif r == 1:
+            neopixel_screen.draw_sprite(logo_04, -1, -4, 0x00ff000, 20)
+            neopixel_screen.draw_sprite(logo_06, -1, 6, 0xffff00, 20)
 
     def end(self):
         menu_info_panel.load_next()
@@ -1317,9 +1327,17 @@ class PressStartSequence(ConnectGamepadSequence):
     def start(self):
         super().start()
         neopixel_screen.fill(0)
-        logo_list = [logo_00, logo_01, logo_02, logo_03, logo_04, logo_05, logo_06]
+        #logo_list = [logo_00, logo_01, logo_02, logo_03, logo_04, logo_05, logo_06]
         #neopixel_screen.draw_sprite(logo, 0, 0, default_palette.piece_color, 20)
-        neopixel_screen.draw_sprite(random.choice(logo_list), 0, 0, default_palette.piece_color, 20)
+
+        r = random.choice((0,1))
+
+        if r == 0:
+            neopixel_screen.draw_sprite(logo_04, -1, -4, 0xff00000, 20)
+            neopixel_screen.draw_sprite(logo_06, -1, 6, 0x00ff00, 20)
+        elif r == 1:
+            neopixel_screen.draw_sprite(logo_04, -1, -4, 0xff000ff, 20)
+            neopixel_screen.draw_sprite(logo_06, -1, 6, 0x00ffff, 20)
 
     def draw(self, surface):
         self.parent_device.draw_icon(gamepad_icon[self.gamepad_current_frame], 9, 0, surface)
