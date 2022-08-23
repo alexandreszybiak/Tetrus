@@ -22,6 +22,10 @@ if PI:
 else:
     from font import LCD_FONT, SEG7_FONT, TINY_FONT
 
+# Neopixel constants
+OFF_BRIGHTNESS = 0.15
+ON_BRIGHTNESS = 0.30
+
 # Images
 #Top Screen - Title screen illustration
 logo = [0, 65520, 65520, 65520, 65520, 3840, 3840, 3840, 3840, 0]
@@ -560,6 +564,9 @@ class NeoPixelScreen:
         self.current_palette = 0
         self.need_refresh = True
 
+    def set_brightness(self, brightness):
+        pixels.setBrightness(brightness)
+
     def set_cell(self, x, y, color):
         if color == blank:
             return
@@ -610,6 +617,9 @@ class NeoPixelScreenSimulator(NeoPixelScreen):
     def __init__(self):
         super().__init__()
         application_surface.fill(SIMULATOR_BACKGROUND)
+
+    def set_brightness(self, brightness):
+        pass
 
     def set_cell(self, x, y, color):
         if color == blank:
@@ -1440,11 +1450,13 @@ class MenuScene(Scene):
     def update(self):
         super().update()
         if input_manager.connected_joystick:
+            neopixel_screen.set_brightness(ON_BRIGHTNESS)
             menu_info_panel.reset_sequence()
             menu_info_panel.add_child(press_start_sequence)
             self.create_score_sequences()
             menu_info_panel.start_sequence()
         elif input_manager.disconnected_joystick:
+            neopixel_screen.set_brightness(OFF_BRIGHTNESS)
             menu_info_panel.reset_sequence()
             menu_info_panel.add_child(connect_gamepad_sequence)
             self.create_score_sequences()
