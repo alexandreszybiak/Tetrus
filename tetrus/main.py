@@ -566,6 +566,7 @@ class NeoPixelScreen:
 
     def set_brightness(self, brightness):
         pixels.setBrightness(brightness)
+        pixels.show()
 
     def set_cell(self, x, y, color):
         if color == blank:
@@ -1757,7 +1758,7 @@ if PI:
     device.contrast(20)
     pixel_pin = board.D21
     num_pixels = BOARD_WIDTH * BOARD_HEIGHT
-    pixels = neopixel.NeoPixel(pixel_pin, num_pixels, brightness=0.30, auto_write=False, pixel_order=neopixel.GRB)
+    pixels = neopixel.NeoPixel(pixel_pin, num_pixels, brightness=OFF_BRIGHTNESS, auto_write=False, pixel_order=neopixel.GRB)
 else:
     pygame.display.set_caption("Tetrus Desktop")
     application_surface = pygame.display.set_mode((0, 0))
