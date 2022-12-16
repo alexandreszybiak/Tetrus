@@ -43,6 +43,22 @@ logo_04 = [0, 65520, 65520, 65520, 65520, 61440, 61440, 61440, 61440, 0]
 logo_05 = [0, 61440, 61440, 61440, 61440, 65520, 65520, 65520, 65520, 0]
 #O piece illustration
 logo_06 = [0, 16320, 16320, 16320, 16320, 16320, 16320, 16320, 16320, 0]
+
+#Images
+image_00 = [logo_00, logo_01, logo_02, logo_03]
+image_01 = [logo_04, logo_05, logo_06, logo_00]
+
+#Image bank for random pick
+images = [image_00, image_01]
+
+#Palette for illustrations
+illustration_palette = [0xffff00, 0x00ff00, 0x00ffff, 0x0000ff, 0xffff00, 0xff0000]
+illustration_palette_dimmed = [0x111100, 0x001100, 0x001111, 0x000011, 0x111100, 0x110000]
+
+#Color for big time icon
+big_time_icon_color = 0xffff00
+big_time_icon_color_dimmed = 0x111100
+
 #Top Screen - Pause menu illustration
 pause_icon = [0x7f, 0x7f, 0x7f, 0x41, 0x7f, 0x7f, 0x41, 0x7f, 0x7f, 0x7f]
 #Top Screen - Last Scores Clock illustration
@@ -77,6 +93,7 @@ BRONZE_COLOR = 0xcd7f32
 SILVER_COLOR = 0xc3c7c7
 GOLD_COLOR = 0xffd700
 cup_colors = [GOLD_COLOR, SILVER_COLOR, BRONZE_COLOR]
+cup_colors_dimmed = [0x111111, 0x111111, 0x111111]
 
 # Gamepad Constants
 JKEY_X = 3
@@ -493,7 +510,7 @@ class InputManager:
                 if event.button == JKEY_X:
                     self.pressed_hard_drop = True
                 elif event.button == JKEY_SEL:
-                    self.pressed_quit = True
+                    pass
                 elif event.button == JKEY_B:
                     self.pressed_rotate_right = True
                 elif event.button == JKEY_A:
@@ -565,8 +582,7 @@ class NeoPixelScreen:
         self.need_refresh = True
 
     def set_brightness(self, brightness):
-        pixels.setBrightness(brightness)
-        pixels.show()
+        pass
 
     def set_cell(self, x, y, color):
         if color == blank:
@@ -1291,18 +1307,14 @@ class ConnectGamepadSequence(LumaSequence):
         self.gamepad_current_frame = 0
         self.loop_count = 0
         neopixel_screen.fill(0)
-        #logo_list = [logo_00, logo_01, logo_02, logo_03, logo_04, logo_05, logo_06]
-        #neopixel_screen.draw_sprite(logo_04, 0, 0, default_palette.ghost_color, 20)
-        #neopixel_screen.draw_sprite(logo_06, 0, 0, default_palette.ghost_color, 20)
 
-        r = random.choice((0, 1))
+        i = 0
 
-        if r == 0:
-            neopixel_screen.draw_sprite(logo_04, -1, -4, 0xffff000, 20)
-            neopixel_screen.draw_sprite(logo_06, -1, 6, 0x0000ff, 20)
-        elif r == 1:
-            neopixel_screen.draw_sprite(logo_04, -1, -4, 0x00ff000, 20)
-            neopixel_screen.draw_sprite(logo_06, -1, 6, 0xffff00, 20)
+        p = illustration_palette if input_manager.joystick_is_connected else illustration_palette_dimmed
+
+        for image in random.choice(images):
+            neopixel_screen.draw_sprite(image, 0, 0, p[i], 20)
+            i += 1
 
     def end(self):
         menu_info_panel.load_next()
@@ -1328,17 +1340,14 @@ class PressStartSequence(ConnectGamepadSequence):
     def start(self):
         super().start()
         neopixel_screen.fill(0)
-        #logo_list = [logo_00, logo_01, logo_02, logo_03, logo_04, logo_05, logo_06]
-        #neopixel_screen.draw_sprite(logo, 0, 0, default_palette.piece_color, 20)
 
-        r = random.choice((0,1))
+        i = 0
 
-        if r == 0:
-            neopixel_screen.draw_sprite(logo_04, -1, -4, 0xff00000, 20)
-            neopixel_screen.draw_sprite(logo_06, -1, 6, 0x00ff00, 20)
-        elif r == 1:
-            neopixel_screen.draw_sprite(logo_04, -1, -4, 0xff000ff, 20)
-            neopixel_screen.draw_sprite(logo_06, -1, 6, 0x00ffff, 20)
+        p = illustration_palette if input_manager.joystick_is_connected else illustration_palette_dimmed
+
+        for image in random.choice(images):
+            neopixel_screen.draw_sprite(image, 0, 0, p[i], 20)
+            i += 1
 
     def draw(self, surface):
         self.parent_device.draw_icon(gamepad_icon[self.gamepad_current_frame], 9, 0, surface)
@@ -1352,7 +1361,8 @@ class HighScoreSequence(LumaSequence):
     def start(self):
         super().start()
         neopixel_screen.fill(0)
-        neopixel_screen.draw_sprite(big_cup_icon, 0, 6, cup_colors[self.index], 10)
+        palette = cup_colors if input_manager.joystick_is_connected else cup_colors_dimmed
+        neopixel_screen.draw_sprite(big_cup_icon, 0, 6, palette[self.index], 10)
         # if highscores[self.index].get_signature() is not None:
         #     menu_scene.signature_canvas.content = highscores[self.index].get_signature()
         #     menu_scene.signature_canvas.draw()
@@ -1368,7 +1378,8 @@ class LastScoreSequence(LumaSequence):
     def start(self):
         super().start()
         neopixel_screen.fill(0)
-        neopixel_screen.draw_sprite(big_time_icon, 0, 0, default_palette.piece_color, 20)
+        color = big_time_icon_color if input_manager.joystick_is_connected else big_time_icon_color_dimmed
+        neopixel_screen.draw_sprite(big_time_icon, 0, 0, color, 20)
 
     def draw(self, surface):
         self.parent_device.draw_icon(time_icon, 0, 0, surface)
@@ -1848,6 +1859,8 @@ falling_piece = Piece()
 game_scene.board_filler = BoardFiller()
 game_scene.line_cleaner = LineCleaner()
 game_scene.line_flasher = LineFlasher()
+
+
 
 while True:
     # update
